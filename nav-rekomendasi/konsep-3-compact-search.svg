@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-labelledby="title desc">
+  <title id="title">Konsep 3 — navbar kompak dan pencarian ekspansif</title>
+  <desc id="desc">Navbar kompak gelap dengan logo Urbann Attier tetap, menu tengah, kolom pencarian yang melebar saat fokus, dan tombol keranjang berlabel.</desc>
+  <defs>
+    <linearGradient id="bg" x2="0" y2="1"><stop stop-color="#29251f"/><stop offset=".55" stop-color="#544332"/><stop offset="1" stop-color="#e9dfd1"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity=".28"/></filter>
+  </defs>
+  <rect width="1440" height="720" fill="url(#bg)"/>
+  <text x="64" y="47" fill="#e0d4c1" font-family="Inter,Arial,sans-serif" font-size="14" letter-spacing="3">REKOMENDASI NAVBAR · KONSEP 03</text>
+  <rect x="52" y="78" width="1336" height="100" rx="50" fill="#111111" fill-opacity=".94" stroke="#937746" filter="url(#shadow)"/>
+  <image href="../assets/urban attier tf.png" x="78" y="96" width="108" height="64" preserveAspectRatio="xMidYMid meet"/>
+  <g fill="#f1e3c4" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="500">
+    <text x="250" y="137">Home</text><text x="310" y="137">Shop</text><text x="362" y="137">Brand</text><text x="420" y="137">Kategori</text><text x="500" y="137">Tentang Kami</text><text x="652" y="137">Kontak</text>
+  </g>
+  <rect x="792" y="106" width="300" height="44" rx="22" fill="#211d18" stroke="#c2a263" stroke-width="1.5"/>
+  <circle cx="820" cy="128" r="8" fill="none" stroke="#e3c385" stroke-width="1.6"/><path d="m826 134 6 6" stroke="#e3c385" stroke-width="1.6"/>
+  <text x="848" y="133" fill="#d3c6b1" font-family="Inter,Arial,sans-serif" font-size="13">Cari produk atau warna...</text>
+  <g transform="translate(1125 108)" fill="none" stroke="#e3c385" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h4l4 25h22l5-18H9"/><circle cx="14" cy="34" r="2"/><circle cx="30" cy="34" r="2"/></g>
+  <rect x="1180" y="106" width="170" height="44" rx="22" fill="#c8a354"/>
+  <text x="1265" y="133" text-anchor="middle" fill="#17130f" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="700">Keranjang · 2</text>
+  <rect x="792" y="151" width="132" height="2" rx="1" fill="#c8a354"/>
+  <text x="66" y="254" fill="#f3e7d0" font-family="Inter,Arial,sans-serif" font-size="12" letter-spacing="2">SAAT MENU MOBILE DIBUKA</text>
+  <rect x="52" y="274" width="1336" height="300" rx="18" fill="#111111" fill-opacity=".96" stroke="#8d7447" filter="url(#shadow)"/>
+  <image href="../assets/urban attier tf.png" x="78" y="291" width="96" height="58" preserveAspectRatio="xMidYMid meet"/>
+  <g transform="translate(1313 294)" stroke="#e3c385" stroke-width="2" stroke-linecap="round"><path d="M0 0h28M0 8h28M0 16h28"/></g>
+  <rect x="80" y="367" width="860" height="45" rx="22" fill="#211d18" stroke="#c2a263"/>
+  <circle cx="107" cy="389" r="8" fill="none" stroke="#e3c385" stroke-width="1.5"/><path d="m113 395 6 6" stroke="#e3c385" stroke-width="1.5"/>
+  <text x="135" y="394" fill="#d3c6b1" font-family="Inter,Arial,sans-serif" font-size="13">Cari produk atau warna...</text>
+  <g fill="#f1e3c4" font-family="Inter,Arial,sans-serif" font-size="17"><text x="82" y="458">Home</text><text x="82" y="492">Shop</text><text x="82" y="526">Brand</text><text x="82" y="560">Kategori</text><text x="330" y="458">Tentang Kami</text><text x="330" y="492">Kontak</text><text x="330" y="526">Keranjang · 2 pcs</text></g>
+  <rect x="1010" y="330" width="322" height="190" rx="14" fill="#252019" stroke="#655438"/>
+  <text x="1038" y="371" fill="#e3c385" font-family="Georgia,serif" font-size="22">Fokus pada belanja</text>
+  <text x="1038" y="405" fill="#d7cdbd" font-family="Inter,Arial,sans-serif" font-size="14">Pencarian melebar saat difokuskan.</text>
+  <text x="1038" y="430" fill="#d7cdbd" font-family="Inter,Arial,sans-serif" font-size="14">Keranjang dibuat menonjol agar mudah</text>
+  <text x="1038" y="455" fill="#d7cdbd" font-family="Inter,Arial,sans-serif" font-size="14">ditemukan pelanggan.</text>
+  <text x="1038" y="495" fill="#b79a61" font-family="Inter,Arial,sans-serif" font-size="12">Menu hamburger berubah menjadi tanda X.</text>
+  <rect x="52" y="617" width="1336" height="50" rx="12" fill="#f8f4eb" fill-opacity=".94"/>
+  <text x="720" y="648" text-anchor="middle" fill="#3a3024" font-family="Inter,Arial,sans-serif" font-size="15">Animasi: header mengecil · link muncul berurutan · search focus · badge keranjang memantul</text>
+</svg>

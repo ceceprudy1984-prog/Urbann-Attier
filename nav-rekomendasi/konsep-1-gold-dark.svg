@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-labelledby="title desc">
+  <title id="title">Konsep 1 — navbar hitam dan emas</title>
+  <desc id="desc">Navbar desktop premium dengan logo Urbann Attier tetap, menu, kolom pencarian, ikon akun dan keranjang. Garis menu aktif tumbuh saat hover; navbar menyusut ketika halaman digulir.</desc>
+  <defs>
+    <linearGradient id="bg" x2="0" y2="1"><stop stop-color="#f6f1e9"/><stop offset="1" stop-color="#e9dfd1"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#17130f" flood-opacity=".16"/></filter>
+  </defs>
+  <rect width="1440" height="720" fill="url(#bg)"/>
+  <text x="64" y="47" fill="#766b5b" font-family="Inter,Arial,sans-serif" font-size="14" letter-spacing="3">REKOMENDASI NAVBAR · KONSEP 01</text>
+  <rect x="52" y="78" width="1336" height="100" rx="8" fill="#111111" filter="url(#shadow)"/>
+  <image href="../assets/urban attier tf.png" x="78" y="96" width="108" height="64" preserveAspectRatio="xMidYMid meet"/>
+  <g fill="#f1e3c4" font-family="Inter,Arial,sans-serif" font-size="15" font-weight="500">
+    <text x="254" y="137">Home</text><text x="320" y="137">Shop</text><text x="370" y="137">Brand</text><text x="435" y="137">Kategori</text><text x="520" y="137">Tentang Kami</text><text x="663" y="137">Kontak</text>
+  </g>
+  <rect x="844" y="108" width="310" height="42" rx="21" fill="#24211c" stroke="#6f603e"/>
+  <text x="866" y="135" fill="#bdb5a8" font-family="Inter,Arial,sans-serif" font-size="13">Cari gamis atau warna...</text>
+  <circle cx="1128" cy="129" r="9" fill="none" stroke="#e3c385" stroke-width="1.5"/><path d="m1135 136 6 6" stroke="#e3c385" stroke-width="1.5"/>
+  <circle cx="1202" cy="128" r="8" fill="none" stroke="#e3c385" stroke-width="1.5"/><path d="M1188 151c1-10 27-10 28 0M1190 114c0-10 23-10 23 0" fill="none" stroke="#e3c385" stroke-width="1.5"/>
+  <g transform="translate(1243 108)" fill="none" stroke="#e3c385" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h4l4 25h22l5-18H9"/><circle cx="14" cy="34" r="2"/><circle cx="30" cy="34" r="2"/></g>
+  <circle cx="1284" cy="111" r="10" fill="#c8a354"/><text x="1284" y="115" text-anchor="middle" fill="#111" font-family="Arial" font-size="10" font-weight="700">2</text>
+  <rect x="254" y="151" width="48" height="2" rx="1" fill="#c8a354"/>
+  <text x="70" y="254" fill="#8c7651" font-family="Inter,Arial,sans-serif" font-size="12" letter-spacing="2">TAMPILAN SAAT HALAMAN DIGULIR</text>
+  <rect x="52" y="274" width="1336" height="70" rx="8" fill="#111111" filter="url(#shadow)"/>
+  <image href="../assets/urban attier tf.png" x="78" y="282" width="96" height="54" preserveAspectRatio="xMidYMid meet"/>
+  <g fill="#f1e3c4" font-family="Inter,Arial,sans-serif" font-size="14"><text x="254" y="317">Home</text><text x="320" y="317">Shop</text><text x="370" y="317">Brand</text><text x="435" y="317">Kategori</text><text x="520" y="317">Tentang Kami</text><text x="663" y="317">Kontak</text></g>
+  <rect x="844" y="289" width="310" height="38" rx="19" fill="#24211c" stroke="#6f603e"/>
+  <text x="866" y="313" fill="#bdb5a8" font-family="Inter,Arial,sans-serif" font-size="12">Cari gamis atau warna...</text>
+  <circle cx="1202" cy="308" r="8" fill="none" stroke="#e3c385" stroke-width="1.5"/><path d="M1189 328c2-9 24-9 26 0" fill="none" stroke="#e3c385" stroke-width="1.5"/>
+  <path d="M1200 365v26" stroke="#9c8351" stroke-width="1.5"/><path d="m1194 384 6 7 6-7" fill="none" stroke="#9c8351" stroke-width="1.5"/>
+  <rect x="52" y="426" width="1336" height="224" rx="12" fill="#fbf9f5" stroke="#ddd2c1"/>
+  <text x="84" y="472" fill="#2d2821" font-family="Georgia,serif" font-size="28">Animasi yang diambil dari referensi</text>
+  <g font-family="Inter,Arial,sans-serif" font-size="16" fill="#554a3a">
+    <circle cx="96" cy="520" r="13" fill="#c8a354"/><text x="96" y="525" text-anchor="middle" fill="#111" font-weight="700">1</text><text x="122" y="526">Navbar mengecil dan bayangan muncul saat scroll.</text>
+    <circle cx="96" cy="562" r="13" fill="#c8a354"/><text x="96" y="567" text-anchor="middle" fill="#111" font-weight="700">2</text><text x="122" y="568">Garis emas tumbuh dari kiri saat menu dipilih atau di-hover.</text>
+    <circle cx="96" cy="604" r="13" fill="#c8a354"/><text x="96" y="609" text-anchor="middle" fill="#111" font-weight="700">3</text><text x="122" y="610">Menu dan ikon muncul bertahap; badge keranjang memantul saat berubah.</text>
+  </g>
+</svg>
