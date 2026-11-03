@@ -7,7 +7,7 @@ const checkoutActionStatus = document.querySelector("#checkoutActionStatus");
 const checkoutWhatsAppButton = document.querySelector("#checkoutWhatsAppButton");
 
 // Ganti dengan nomor WhatsApp bisnis format internasional tanpa tanda + atau spasi.
-const STORE_WHATSAPP = "6285872636941";
+const STORE_WHATSAPP = "6282318500057";
 
 function renderCheckout() {
   const items = UrbannCart.getItems();
