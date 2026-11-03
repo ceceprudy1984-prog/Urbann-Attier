@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout | Urbann Attier</title>
+    <meta name="description" content="Periksa pesanan dan siapkan informasi pengiriman untuk belanja di Urbann Attier." />
+    <link rel="icon" type="image/x-icon" href="assets/Urban Attier.jpg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="halaman-checkout">
+    <main class="checkout-page">
+      <a class="detail-kembali" href="keranjang.html">&larr; Kembali ke keranjang</a>
+      <header class="checkout-heading">
+        <p class="section-label">Langkah terakhir sebelum memesan</p>
+        <h1 class="detail-page-title">Checkout</h1>
+        <ol class="checkout-steps" aria-label="Tahapan checkout">
+          <li class="is-current">Pesanan</li><li>Pengiriman</li><li>Pembayaran</li>
+        </ol>
+      </header>
+
+      <div id="checkoutEmpty" class="checkout-empty" hidden>
+        <h2>Keranjang masih kosong</h2>
+        <p>Tambahkan produk terlebih dahulu untuk melanjutkan checkout.</p>
+        <a class="btn btn-primary" href="index.html#produk">Lihat koleksi</a>
+      </div>
+
+      <div class="checkout-layout" id="checkoutContent">
+        <div class="checkout-main">
+          <section class="checkout-card" aria-labelledby="checkoutProductsTitle">
+            <div class="checkout-card-heading"><span class="checkout-number">1</span><div><h2 id="checkoutProductsTitle">Pesanan Anda</h2><p>Pastikan warna, ukuran, dan jumlah sudah sesuai.</p></div></div>
+            <div id="checkoutProducts" class="checkout-products"></div>
+            <a class="checkout-edit-link" href="keranjang.html">Ubah keranjang</a>
+          </section>
+
+          <section class="checkout-card" aria-labelledby="recipientTitle">
+            <div class="checkout-card-heading"><span class="checkout-number">2</span><div><h2 id="recipientTitle">Informasi penerima</h2><p>Informasi ini diperlukan untuk menghitung pengiriman.</p></div></div>
+            <form id="recipientForm" class="checkout-form">
+              <label>Nama lengkap<input name="name" type="text" autocomplete="name" placeholder="Nama penerima" required /></label>
+              <label>Nomor WhatsApp<input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="08xxxxxxxxxx" required /></label>
+              <label class="checkout-full">Alamat lengkap<textarea name="address" autocomplete="street-address" rows="3" placeholder="Nama jalan, nomor rumah, RT/RW, patokan" required></textarea></label>
+              <label>Provinsi<input name="province" autocomplete="address-level1" placeholder="Pilih provinsi" required /></label>
+              <label>Kota/Kabupaten<input name="city" autocomplete="address-level2" placeholder="Pilih kota/kabupaten" required /></label>
+              <label>Kecamatan<input name="district" placeholder="Pilih kecamatan" required /></label>
+              <label>Kode pos<input name="postalCode" autocomplete="postal-code" inputmode="numeric" placeholder="Kode pos" required /></label>
+              <label class="checkout-full">Catatan untuk kurir <span class="checkout-optional">(opsional)</span><textarea name="note" rows="2" placeholder="Contoh: rumah pagar putih, dekat minimarket"></textarea></label>
+            </form>
+          </section>
+
+          <section class="checkout-card" aria-labelledby="deliveryTitle">
+            <div class="checkout-card-heading"><span class="checkout-number">3</span><div><h2 id="deliveryTitle">Pengiriman</h2><p>Pilihan dan tarif kurir akan muncul setelah integrasi layanan pengiriman.</p></div></div>
+            <div class="checkout-pending"><span class="checkout-pending-icon" aria-hidden="true">⌁</span><div><strong>Tarif ongkir belum tersedia otomatis</strong><p>Untuk sementara, biaya dan pilihan ekspedisi perlu dikonfirmasi sebelum pesanan dibayar.</p></div></div>
+            <p class="checkout-shipping-hint">Pastikan alamat penerima lengkap. Tarif nantinya dihitung dari lokasi asal toko, tujuan, berat, dan dimensi paket.</p>
+          </section>
+
+          <section class="checkout-card" aria-labelledby="paymentTitle">
+            <div class="checkout-card-heading"><span class="checkout-number">4</span><div><h2 id="paymentTitle">Pembayaran</h2><p>Metode pembayaran online akan diaktifkan setelah payment gateway terhubung.</p></div></div>
+            <div class="checkout-pending checkout-payment-pending"><span class="checkout-pending-icon" aria-hidden="true">◷</span><div><strong>Pembayaran belum aktif</strong><p>Halaman ini belum mengirim pesanan atau memproses pembayaran.</p></div></div>
+          </section>
+        </div>
+
+        <aside class="checkout-summary" aria-labelledby="checkoutSummaryTitle">
+          <h2 id="checkoutSummaryTitle">Ringkasan pembayaran</h2>
+          <div id="checkoutTotals"></div>
+          <p class="checkout-total-row"><span>Ongkos kirim</span><strong>Menunggu tarif kurir</strong></p>
+          <p class="checkout-grand-total"><span>Total sementara</span><strong id="checkoutGrandTotal">-</strong></p>
+          <button class="btn btn-primary checkout-submit" type="button" disabled>Pembayaran belum tersedia</button>
+          <p class="checkout-summary-note">Total akhir akan diperbarui setelah ongkir dan payment gateway tersedia.</p>
+          <a class="checkout-back-link" href="keranjang.html">Kembali dan ubah pesanan</a>
+        </aside>
+      </div>
+    </main>
+
+    <script src="main.js"></script>
+    <script src="cart-store.js"></script>
+    <script src="checkout.js"></script>
+  </body>
+</html>
