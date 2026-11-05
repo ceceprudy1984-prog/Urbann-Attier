@@ -26,6 +26,8 @@ function renderCart() {
       if (!product) return "";
       const color = product.varianWarna.find((variant) => variant.nama === item.color);
       const price = UrbannCart.pricing(product, item);
+      const safe = window.urbannEscapeHtml;
+      const photo = window.urbannSafeImageUrl(color?.foto || product.varianWarna[0]?.foto || "");
       if (price.subtotal == null) allPricesAvailable = false;
       else total += price.subtotal;
 
@@ -34,10 +36,10 @@ function renderCart() {
 
       return `
         <article class="cart-item">
-          <img class="cart-item-image" src="${color?.foto || product.varianWarna[0]?.foto || ""}" alt="${product.nama} warna ${item.color}">
+          <img class="cart-item-image" src="${safe(photo)}" alt="${safe(product.nama)} warna ${safe(item.color)}">
           <div class="cart-item-info">
-            <h2>${product.nama}</h2>
-            <p class="cart-item-variant">${UrbannCart.description(product, item)}</p>
+            <h2>${safe(product.nama)}</h2>
+            <p class="cart-item-variant">${safe(UrbannCart.description(product, item))}</p>
             <p>Skema harga: <strong>${price.label}</strong></p>
             <p>Harga per pcs: <strong>${UrbannCart.formatRupiah(price.unitPrice)}</strong></p>
             <label for="cartQuantity${index}">Jumlah (pcs)</label>
@@ -84,4 +86,5 @@ function renderCart() {
   });
 }
 
-renderCart();
+window.URBANN_PRODUCTS_READY.then(renderCart);
+window.addEventListener("urbann:catalog-updated", renderCart);

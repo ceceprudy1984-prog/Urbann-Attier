@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#181715" />
+    <title>Dashboard Admin | Urbann Attier</title>
+    <link rel="icon" type="image/x-icon" href="assets/Urban Attier.jpg" />
+    <link rel="stylesheet" href="admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="admin.js" defer></script>
+  </head>
+  <body class="admin-body">
+    <main class="admin-shell">
+      <section class="login-card" id="loginView" aria-labelledby="loginTitle">
+        <a class="admin-brand" href="index.html" aria-label="Kembali ke Urbann Attier">
+          <img src="assets/Urban Attier.jpg" alt="" />
+          <span>Urbann Attier</span>
+        </a>
+        <p class="eyebrow">AREA KHUSUS ADMIN</p>
+        <h1 id="loginTitle">Masuk ke dashboard</h1>
+        <p class="login-intro">Gunakan akun admin yang sudah terdaftar di Supabase.</p>
+        <form id="loginForm" class="login-form">
+          <label for="adminEmail">Email</label>
+          <input id="adminEmail" name="email" type="email" autocomplete="username" required />
+          <label for="adminPassword">Kata sandi</label>
+          <input id="adminPassword" name="password" type="password" autocomplete="current-password" required />
+          <button class="button button-primary" id="loginButton" type="submit">Masuk</button>
+          <p class="form-status" id="loginStatus" role="status" aria-live="polite"></p>
+        </form>
+        <a class="back-link" href="index.html">&larr; Kembali ke website</a>
+      </section>
+
+      <section class="dashboard-view" id="dashboardView" hidden>
+        <header class="dashboard-header">
+          <a class="admin-brand" href="index.html">
+            <img src="assets/urban attier tf.png" alt="" />
+            <span>Urbann Attier</span>
+          </a>
+          <div class="admin-header-actions">
+            <span class="admin-badge">Admin</span>
+            <button class="button button-quiet" id="logoutButton" type="button">Keluar</button>
+          </div>
+        </header>
+
+        <div class="dashboard-content">
+          <nav class="admin-nav" aria-label="Menu dashboard">
+            <button class="admin-nav-button is-active" type="button" data-admin-view="overview">Ringkasan</button>
+            <button class="admin-nav-button" type="button" data-admin-view="products">Produk &amp; stok</button>
+          </nav>
+          <p class="dashboard-status" id="dashboardStatus" role="status" aria-live="polite"></p>
+
+          <section class="admin-page" id="overviewPage">
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">PENGELOLAAN TOKO</p>
+                <h1>Ringkasan</h1>
+                <p class="dashboard-welcome" id="adminWelcome"></p>
+              </div>
+              <button class="button button-quiet" id="refreshButton" type="button">Muat ulang</button>
+            </div>
+
+            <section class="stat-grid" aria-label="Ringkasan toko">
+              <article class="stat-card"><span>Produk</span><strong id="productCount">—</strong><small>Semua produk di katalog</small></article>
+              <article class="stat-card"><span>Pesanan</span><strong id="orderCount">—</strong><small>Total pesanan tersimpan</small></article>
+              <article class="stat-card"><span>Menunggu konfirmasi</span><strong id="pendingCount">—</strong><small>Pembayaran manual</small></article>
+            </section>
+
+            <section class="panel" aria-labelledby="recentOrdersTitle">
+              <div class="panel-heading">
+                <div><p class="eyebrow">AKTIVITAS TOKO</p><h2 id="recentOrdersTitle">Pesanan terbaru</h2></div>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Nomor pesanan</th><th>Pelanggan</th><th>Total</th><th>Status</th><th>Tanggal</th></tr></thead>
+                  <tbody id="recentOrdersBody"></tbody>
+                </table>
+              </div>
+              <p class="empty-state" id="ordersEmpty" hidden>Belum ada pesanan yang tersimpan di database.</p>
+            </section>
+          </section>
+
+          <section class="admin-page" id="productsPage" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">KATALOG TOKO</p>
+                <h1>Produk &amp; stok</h1>
+                <p class="dashboard-welcome">Kelola harga, varian warna, ukuran, foto, dan stok setiap kombinasi.</p>
+              </div>
+              <button class="button button-primary heading-action" id="addProductButton" type="button">Tambah produk</button>
+            </div>
+            <p class="products-status" id="productsStatus" role="status" aria-live="polite"></p>
+
+            <section class="panel product-panel" aria-labelledby="productsTitle">
+              <div class="panel-heading product-panel-heading">
+                <div><p class="eyebrow">DAFTAR KATALOG</p><h2 id="productsTitle">Semua produk</h2></div>
+                <label class="search-field" for="productSearch">
+                  <span class="sr-only">Cari produk</span>
+                  <input id="productSearch" type="search" placeholder="Cari nama atau SKU" autocomplete="off" />
+                </label>
+              </div>
+              <div class="table-scroll">
+                <table class="products-table">
+              <thead><tr><th>Produk</th><th>Harga ecer</th><th>Varian</th><th>Stok tercatat</th><th>Status</th><th>Aksi</th></tr></thead>
+                  <tbody id="productsBody"></tbody>
+                </table>
+              </div>
+              <p class="empty-state" id="productsEmpty" hidden>Belum ada produk. Klik “Tambah produk” untuk mulai mengisi katalog.</p>
+            </section>
+          </section>
+        </div>
+      </section>
+
+      <div class="modal-backdrop" id="productModal" hidden>
+        <section class="product-modal" role="dialog" aria-modal="true" aria-labelledby="productFormTitle">
+          <div class="modal-header">
+            <div><p class="eyebrow">KATALOG TOKO</p><h2 id="productFormTitle">Tambah produk</h2></div>
+            <button class="modal-close" id="closeProductModal" type="button" aria-label="Tutup formulir">&times;</button>
+          </div>
+          <form id="productForm" class="product-form">
+            <div class="form-grid">
+              <div class="form-field form-field-wide"><label for="productName">Nama produk *</label><input id="productName" name="name" required maxlength="120" /></div>
+              <div class="form-field"><label for="productSku">SKU (opsional)</label><input id="productSku" name="sku" maxlength="80" /></div>
+              <div class="form-field"><label for="productCategory">Kategori</label><input id="productCategory" name="category" maxlength="80" /></div>
+              <div class="form-field form-field-wide"><label for="productSlug">Slug URL *</label><input id="productSlug" name="slug" required maxlength="140" /><small>Otomatis dibuat dari nama produk; boleh Anda ubah.</small></div>
+              <div class="form-field"><label for="priceRetail">Harga ecer (Rp)</label><input id="priceRetail" name="price_retail" type="number" min="0" step="1" /></div>
+              <div class="form-field"><label for="priceSeries">Harga serian (Rp)</label><input id="priceSeries" name="price_series" type="number" min="0" step="1" /></div>
+              <div class="form-field"><label for="priceWholesale">Harga grosir (Rp)</label><input id="priceWholesale" name="price_wholesale" type="number" min="0" step="1" /></div>
+              <div class="form-field"><label for="wholesaleMin">Minimal grosir (pcs)</label><input id="wholesaleMin" name="wholesale_min_qty" type="number" min="1" step="1" value="20" required /></div>
+              <div class="form-field"><label for="productMaterial">Bahan</label><input id="productMaterial" name="material" maxlength="160" /></div>
+              <div class="form-field"><label for="productModel">Model</label><input id="productModel" name="model" maxlength="160" /></div>
+              <div class="form-field form-field-wide"><label for="productDescription">Deskripsi</label><textarea id="productDescription" name="description" rows="4"></textarea></div>
+              <div class="form-field form-field-wide"><label for="productCare">Catatan/perawatan</label><textarea id="productCare" name="care_notes" rows="2"></textarea></div>
+            </div>
+
+            <div class="form-section">
+              <div><h3>Varian warna dan foto</h3><p>Isi satu warna per baris: <code>Warna | path foto | teks alt</code>. Anda juga bisa memilih foto langsung dari perangkat di bawah ini. Baris warna yang sama dapat diulang untuk beberapa foto.</p></div>
+              <label class="sr-only" for="productVariants">Varian warna dan foto</label>
+              <textarea id="productVariants" rows="5" placeholder="Navy | assets/produk/navy.jpg | Gamis warna navy&#10;Mocca | assets/produk/mocca.jpg | Gamis warna mocca"></textarea>
+              <div class="upload-controls">
+                <label class="form-field" for="imageVariantColor"><span>Pilih warna untuk foto</span><select id="imageVariantColor" disabled><option value="">Isi warna terlebih dahulu</option></select></label>
+                <label class="form-field" for="productImageFiles"><span>Pilih foto dari perangkat</span><input id="productImageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled /><small>JPG, PNG, WebP, atau AVIF; maksimal 10 MB per foto.</small></label>
+              </div>
+              <div class="selected-files" id="selectedImageFiles" aria-live="polite"></div>
+            </div>
+
+            <div class="form-section">
+              <div><h3>Ukuran dan detail ukuran</h3><p>Isi satu ukuran per baris: <code>Size | lingkar dada cm | panjang gamis cm | panjang lengan cm</code>. Angka ukuran boleh dikosongkan jika belum ada datanya.</p></div>
+              <label class="sr-only" for="productSizes">Ukuran dan detail</label>
+              <textarea id="productSizes" rows="4" placeholder="S | 96 | 135 | 58&#10;M | 100 | 138 | 59&#10;L | 104 | 140 | 60"></textarea>
+            </div>
+
+            <div class="form-section" id="inventorySection">
+              <div class="inventory-heading"><div><h3>Stok tiap warna dan ukuran</h3><p>Kosong berarti stok belum diketahui. Isi angka <code>0</code> untuk menandai habis.</p></div><span id="inventoryCombinationCount">0 kombinasi</span></div>
+              <div class="inventory-matrix" id="inventoryMatrix"><p class="matrix-empty">Isi warna dan ukuran terlebih dahulu.</p></div>
+              <button class="button button-quiet stock-save-button" id="saveStockButton" type="button" disabled>Simpan stok</button>
+            </div>
+
+            <label class="active-toggle"><input id="productActive" name="is_active" type="checkbox" /><span><strong>Tampilkan produk di website</strong><small>Produk aktif dapat dibaca pengunjung sesuai kebijakan database.</small></span></label>
+            <p class="form-status product-form-status" id="productFormStatus" role="status" aria-live="polite"></p>
+            <div class="modal-actions">
+              <button class="button button-quiet" id="cancelProductButton" type="button">Batal</button>
+              <button class="button button-primary" id="saveProductButton" type="submit">Simpan produk</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

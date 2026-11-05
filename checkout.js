@@ -27,15 +27,17 @@ function renderCheckout() {
     if (!product) return "";
     const variant = product.varianWarna.find((color) => color.nama === item.color);
     const price = UrbannCart.pricing(product, item);
+    const safe = window.urbannEscapeHtml;
+    const photo = window.urbannSafeImageUrl(variant?.foto || product.varianWarna[0]?.foto || "");
     if (price.subtotal == null) allPricesAvailable = false;
     else subtotal += price.subtotal;
 
     return `
       <article class="checkout-product">
-        <img src="${variant?.foto || product.varianWarna[0]?.foto || ""}" alt="${product.nama}, warna ${item.color}" />
+        <img src="${safe(photo)}" alt="${safe(product.nama)}, warna ${safe(item.color)}" />
         <div class="checkout-product-info">
-          <h3>${product.nama}</h3>
-          <p>${UrbannCart.description(product, item)}</p>
+          <h3>${safe(product.nama)}</h3>
+          <p>${safe(UrbannCart.description(product, item))}</p>
           <p>${price.label} · ${UrbannCart.formatRupiah(price.unitPrice)} / pcs</p>
         </div>
         <div class="checkout-product-price"><span>${item.quantity} pcs</span><strong>${UrbannCart.formatRupiah(price.subtotal)}</strong></div>
@@ -61,7 +63,8 @@ function renderCheckout() {
     : "Lengkapi harga produk terlebih dahulu";
 }
 
-renderCheckout();
+window.URBANN_PRODUCTS_READY.then(renderCheckout);
+window.addEventListener("urbann:catalog-updated", renderCheckout);
 
 recipientForm?.addEventListener("submit", (event) => {
   event.preventDefault();

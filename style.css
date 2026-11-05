@@ -705,6 +705,37 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.detail-photo-thumbnails {
+  display: flex;
+  gap: 9px;
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.detail-photo-thumb {
+  flex: 0 0 74px;
+  width: 74px;
+  height: 96px;
+  padding: 3px;
+  border: 1px solid var(--cream-dark);
+  border-radius: 7px;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.detail-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.detail-photo-thumb.aktif,
+.detail-photo-thumb:hover {
+  border-color: var(--gold-dark);
+  box-shadow: 0 0 0 1px var(--gold-dark);
+}
+
 .detail-info {
   min-width: 0;
 }

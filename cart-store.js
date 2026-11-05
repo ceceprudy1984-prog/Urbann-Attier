@@ -80,7 +80,7 @@ const UrbannCart = (() => {
     let tier = "ecer";
     let unitPrice = product.harga;
 
-    if (item.quantity >= 20) {
+    if (item.quantity >= (Number(product.grosirMinimal) || 20)) {
       tier = "grosir";
       unitPrice = product.hargaGrosir;
     } else if (item.mode !== "ecer") {

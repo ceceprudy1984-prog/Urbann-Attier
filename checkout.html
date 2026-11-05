@@ -65,7 +65,7 @@
           <p class="checkout-total-row"><span>Biaya pengemasan</span><strong id="checkoutPackagingFee">Akan dikonfirmasi admin</strong></p>
           <p class="checkout-total-row"><span>Ongkos kirim</span><strong>Menunggu tarif kurir</strong></p>
           <p class="checkout-grand-total"><span>Total sementara<br><small>(belum termasuk ongkir)</small></span><strong id="checkoutGrandTotal">-</strong></p>
-          <button class="btn btn-primary checkout-submit" id="checkoutWhatsAppButton" type="submit" form="recipientForm">Kirim pesanan ke WhatsApp</button>
+          <button class="btn btn-primary checkout-submit" id="checkoutWhatsAppButton" type="submit" form="recipientForm" disabled>Memuat pesanan…</button>
           <p class="checkout-action-status" id="checkoutActionStatus" role="status" aria-live="polite"></p>
           <p class="checkout-summary-note">Pesan ini mengirim permintaan pesanan. Admin akan mengonfirmasi ongkir, total akhir, dan pembayaran.</p>
           <a class="checkout-back-link" href="keranjang.html">Kembali dan ubah pesanan</a>
@@ -73,6 +73,8 @@
       </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="main.js"></script>
     <script src="cart-store.js"></script>
     <script src="checkout.js"></script>

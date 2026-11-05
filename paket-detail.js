@@ -1,10 +1,11 @@
-const query = new URLSearchParams(window.location.search);
-const idProduk = Number(query.get("id"));
-const produkAktif = produk.find((item) => item.id === idProduk);
+let produkAktif = null;
 const detailContainer = document.getElementById("detailProduk");
 
-let warnaAktif = produkAktif?.varianWarna[0] || null;
+let warnaAktif = null;
 let ukuranAktif = "";
+let fotoAktifIndex = 0;
+const detailEscapeHtml = window.urbannEscapeHtml || ((value) => String(value ?? ""));
+const detailSafeImageUrl = window.urbannSafeImageUrl || ((value) => value || "");
 
 function hargaRupiah(nilai) {
   return nilai == null ? "Segera tersedia" : `Rp ${nilai.toLocaleString("id-ID")}`;
@@ -52,11 +53,11 @@ function renderDetail() {
           class="detail-thumbnail ${index === 0 ? "aktif" : ""}"
           type="button"
           data-warna-index="${index}"
-          aria-label="Lihat warna ${varian.nama}"
+          aria-label="Lihat warna ${detailEscapeHtml(varian.nama)}"
           aria-pressed="${index === 0}"
         >
-          <img src="${varian.foto}" alt="${produkAktif.nama} warna ${varian.nama}" loading="lazy">
-          <span>${varian.nama}</span>
+          <img src="${detailEscapeHtml(detailSafeImageUrl(varian.foto))}" alt="${detailEscapeHtml(produkAktif.nama)} warna ${detailEscapeHtml(varian.nama)}" loading="lazy">
+          <span>${detailEscapeHtml(varian.nama)}</span>
         </button>
       `,
     )
@@ -65,19 +66,19 @@ function renderDetail() {
   const ukuranButtons = produkAktif.ukuran
     .map(
       (ukuran) => `
-        <button class="opsi-btn" type="button" data-ukuran="${ukuran}" aria-pressed="false">
-          ${ukuran}
+        <button class="opsi-btn" type="button" data-ukuran="${detailEscapeHtml(ukuran)}" aria-pressed="false">
+          ${detailEscapeHtml(ukuran)}
         </button>
       `,
     )
     .join("");
 
-  const detailProduk = Object.entries(produkAktif.detailProduk || {})
+  const detailProduk = Object.entries(produkAktif.detailProduk || {}).filter(([, nilai]) => nilai != null && nilai !== "")
     .map(
       ([label, nilai]) => `
         <div class="detail-spec-row">
-          <dt>${label}</dt>
-          <dd>${nilai}</dd>
+        <dt>${detailEscapeHtml(label)}</dt>
+        <dd>${detailEscapeHtml(nilai)}</dd>
         </div>
       `,
     )
@@ -87,10 +88,10 @@ function renderDetail() {
     .map(
       (item) => `
         <tr>
-          <th scope="row">${item.ukuran}</th>
-          <td>${item.lingkarDada}</td>
-          <td>${item.panjangGamis}</td>
-          <td>${item.panjangLengan}</td>
+          <th scope="row">${detailEscapeHtml(item.ukuran)}</th>
+          <td>${detailEscapeHtml(item.lingkarDada ?? "—")}</td>
+          <td>${detailEscapeHtml(item.panjangGamis ?? "—")}</td>
+          <td>${detailEscapeHtml(item.panjangLengan ?? "—")}</td>
         </tr>
       `,
     )
@@ -98,13 +99,14 @@ function renderDetail() {
 
   detailContainer.innerHTML = `
     <a class="detail-kembali" href="index.html#produk">&larr; Kembali ke koleksi</a>
-    <h1 id="namaProduk" class="detail-page-title">${produkAktif.nama}</h1>
+    <h1 id="namaProduk" class="detail-page-title">${detailEscapeHtml(produkAktif.nama)}</h1>
 
     <div class="detail-wrapper">
       <div class="detail-galeri">
         <figure class="detail-img">
-          <img id="fotoUtama" src="${foto}" alt="${produkAktif.nama} warna ${warnaAktif?.nama || ""}">
+          <img id="fotoUtama" src="${detailEscapeHtml(detailSafeImageUrl(foto))}" alt="${detailEscapeHtml(produkAktif.nama)} warna ${detailEscapeHtml(warnaAktif?.nama || "")}">
         </figure>
+        <div class="detail-photo-thumbnails" id="detailPhotoThumbnails"></div>
         <p class="detail-gallery-label">Foto tersedia berdasarkan warna</p>
       </div>
 
@@ -129,12 +131,12 @@ function renderDetail() {
           <ul>
             <li><strong>Ecer:</strong> minimal pembelian 1 pcs.</li>
             <li><strong>Serian:</strong> minimal membeli 1 seri warna atau seri ukuran lengkap; jumlah pcs mengikuti varian yang tersedia.</li>
-            <li><strong>Grosir:</strong> berlaku untuk pembelian 20 pcs atau lebih.</li>
+            <li><strong>Grosir:</strong> berlaku untuk pembelian ${detailEscapeHtml(produkAktif.grosirMinimal || 20)} pcs atau lebih.</li>
           </ul>
         </section>
 
         <div class="opsi-group">
-          <p class="opsi-label">Pilih warna: <strong id="namaWarnaAktif">${warnaAktif?.nama || ""}</strong></p>
+          <p class="opsi-label">Pilih warna: <strong id="namaWarnaAktif">${detailEscapeHtml(warnaAktif?.nama || "")}</strong></p>
           <div class="detail-color-list">${pilihanWarna}</div>
         </div>
 
@@ -173,7 +175,7 @@ function renderDetail() {
 
         <div class="detail-description">
           <h2>Deskripsi produk</h2>
-          <p>${produkAktif.deskripsi}</p>
+          <p>${detailEscapeHtml(produkAktif.deskripsi)}</p>
           <dl class="detail-spec-list">${detailProduk}</dl>
 
           <h3 class="size-guide-title">Detail ukuran</h3>
@@ -208,7 +210,28 @@ function renderDetail() {
     </div>
   `;
 
+  renderPhotoSelection();
   pasangEventDetail();
+}
+
+function renderPhotoSelection() {
+  const images = warnaAktif?.fotos?.length ? warnaAktif.fotos : [warnaAktif?.foto].filter(Boolean);
+  fotoAktifIndex = Math.min(fotoAktifIndex, Math.max(0, images.length - 1));
+  const mainImage = detailContainer.querySelector("#fotoUtama");
+  const thumbnails = detailContainer.querySelector("#detailPhotoThumbnails");
+  if (!mainImage || !thumbnails) return;
+  mainImage.src = detailSafeImageUrl(images[fotoAktifIndex] || "");
+  mainImage.alt = `${produkAktif.nama} warna ${warnaAktif?.nama || ""}`;
+  thumbnails.innerHTML = images.length > 1 ? images.map((image, index) => `
+    <button class="detail-photo-thumb ${index === fotoAktifIndex ? "aktif" : ""}" type="button" data-photo-index="${index}" aria-label="Lihat foto ${index + 1} warna ${detailEscapeHtml(warnaAktif.nama)}" aria-pressed="${index === fotoAktifIndex}">
+      <img src="${detailEscapeHtml(detailSafeImageUrl(image))}" alt="" loading="lazy">
+    </button>`).join("") : "";
+  thumbnails.querySelectorAll("[data-photo-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      fotoAktifIndex = Number(button.dataset.photoIndex);
+      renderPhotoSelection();
+    });
+  });
 }
 
 function pasangEventDetail() {
@@ -216,8 +239,8 @@ function pasangEventDetail() {
     button.addEventListener("click", () => {
       const index = Number(button.dataset.warnaIndex);
       warnaAktif = produkAktif.varianWarna[index];
-      detailContainer.querySelector("#fotoUtama").src = warnaAktif.foto;
-      detailContainer.querySelector("#fotoUtama").alt = `${produkAktif.nama} warna ${warnaAktif.nama}`;
+      fotoAktifIndex = 0;
+      renderPhotoSelection();
       detailContainer.querySelector("#namaWarnaAktif").textContent = warnaAktif.nama;
 
       detailContainer.querySelectorAll("[data-warna-index]").forEach((tombol) => {
@@ -316,15 +339,15 @@ function perbaruiRingkasanPembelian() {
     inputJumlah.min = "1";
     inputJumlah.step = "1";
     inputJumlah.value = String(jumlah);
-    info.textContent = jumlah >= 20
-      ? "Jumlah 20 pcs atau lebih otomatis masuk harga grosir."
+    info.textContent = jumlah >= (Number(produkAktif.grosirMinimal) || 20)
+      ? `Jumlah ${produkAktif.grosirMinimal || 20} pcs atau lebih otomatis masuk harga grosir.`
       : "Harga ecer berlaku untuk pembelian satuan. Pilih seri lengkap untuk harga serian.";
   }
 
   let tier = "ecer";
   let labelTier = "Harga ecer";
   let hargaPerPcs = produkAktif.harga;
-  if (jumlah >= 20) {
+  if (jumlah >= (Number(produkAktif.grosirMinimal) || 20)) {
     tier = "grosir";
     labelTier = "Harga grosir";
     hargaPerPcs = produkAktif.hargaGrosir;
@@ -366,4 +389,42 @@ function perbaruiStok() {
   }
 }
 
-renderDetail();
+window.URBANN_PRODUCTS_READY.then((products) => {
+  const idProduk = Number(new URLSearchParams(window.location.search).get("id"));
+  produkAktif = products.find((item) => item.id === idProduk) || null;
+  warnaAktif = produkAktif?.varianWarna[0] || null;
+  renderDetail();
+}).catch(() => {
+  produkAktif = null;
+  renderDetail();
+});
+
+window.addEventListener("urbann:catalog-updated", (event) => {
+  if (!produkAktif) return;
+  const previousProductId = produkAktif.id;
+  const previousColor = warnaAktif?.nama;
+  const previousSize = ukuranAktif;
+  const previousMode = detailContainer.querySelector("#jenisPembelian")?.value || "ecer";
+  const previousQuantity = detailContainer.querySelector("#jumlahPembelian")?.value || "1";
+  produkAktif = event.detail.find((item) => item.id === previousProductId) || null;
+  if (!produkAktif) {
+    warnaAktif = null;
+    renderDetail();
+    return;
+  }
+  warnaAktif = produkAktif.varianWarna.find((item) => item.nama === previousColor) || produkAktif.varianWarna[0] || null;
+  ukuranAktif = produkAktif.ukuran.includes(previousSize) ? previousSize : "";
+  fotoAktifIndex = 0;
+  renderDetail();
+  const purchaseMode = detailContainer.querySelector("#jenisPembelian");
+  purchaseMode.value = previousMode;
+  purchaseMode.dispatchEvent(new Event("change"));
+  detailContainer.querySelector("#jumlahPembelian").value = previousQuantity;
+  if (ukuranAktif) {
+    const sizeButton = [...detailContainer.querySelectorAll("[data-ukuran]")].find((button) => button.dataset.ukuran === ukuranAktif);
+    sizeButton?.click();
+  } else {
+    perbaruiStok();
+    perbaruiRingkasanPembelian();
+  }
+});
