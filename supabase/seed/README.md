@@ -8,6 +8,8 @@ Halaman website sekarang membaca katalog dari project Supabase `urbann attier st
 2. Buka `initial_catalog_import.sql` di folder ini, salin seluruh isinya ke SQL Editor, lalu klik **Run**.
 3. Jalankan `supabase/migrations/202611040003_enable_catalog_realtime.sql` agar halaman website yang sedang terbuka menerima perubahan katalog.
 4. Untuk mengunggah foto baru dari komputer lewat dashboard, jalankan juga `supabase/migrations/202611040002_product_image_storage.sql`.
-5. Muat ulang halaman website dan dashboard admin.
+5. Jalankan `supabase/migrations/202611050001_checkout_stock_reservation.sql` satu kali agar checkout memvalidasi stok, mencatat pesanan, dan mengurangi stok dalam satu transaksi.
+6. Jalankan `supabase/migrations/202611060001_admin_order_workflow.sql` satu kali agar dashboard dapat mencatat admin yang mengonfirmasi, dan stok dipulihkan otomatis saat pesanan dibatalkan sebelum pengiriman.
+7. Muat ulang halaman website dan dashboard admin.
 
 Jangan jalankan file impor bila tabel `public.products` sudah berisi produk. Script sengaja membatalkan proses jika menemukan data, supaya katalog yang sudah dikelola tidak tertimpa. Foto lama memakai path `assets/...` dan tetap perlu folder aset ikut disertakan saat website diterbitkan.

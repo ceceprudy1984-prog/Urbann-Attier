@@ -1024,6 +1024,17 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.cart-action-status.is-error,
+.cart-stock-error {
+  color: #a12622;
+}
+
+.cart-stock-error {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .cart-view-link {
   display: inline-block;
   margin-top: 6px;

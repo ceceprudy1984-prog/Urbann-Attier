@@ -4,8 +4,13 @@ const cartSummaryContainer = document.getElementById("cartSummary");
 function renderCart() {
   const items = UrbannCart.getItems();
   UrbannCart.updateBadges();
+  const cartStatus = document.getElementById("cartActionStatus");
 
   if (items.length === 0) {
+    if (cartStatus) {
+      cartStatus.textContent = "";
+      cartStatus.classList.remove("is-error");
+    }
     cartItemsContainer.innerHTML = `
       <div class="cart-empty">
         <h2>Keranjang masih kosong</h2>
@@ -19,11 +24,16 @@ function renderCart() {
 
   let total = 0;
   let allPricesAvailable = true;
+  const stockCheck = UrbannCart.validateItems(items);
 
   cartItemsContainer.innerHTML = items
     .map((item, index) => {
       const product = UrbannCart.findProduct(item.productId);
-      if (!product) return "";
+      if (!product) return `
+        <article class="cart-item">
+          <div class="cart-item-info"><h2>Produk tidak tersedia</h2><p>Hapus item ini sebelum melanjutkan checkout.</p></div>
+          <button class="cart-remove" type="button" data-cart-remove="${index}">Hapus</button>
+        </article>`;
       const color = product.varianWarna.find((variant) => variant.nama === item.color);
       const price = UrbannCart.pricing(product, item);
       const safe = window.urbannEscapeHtml;
@@ -65,16 +75,21 @@ function renderCart() {
     <h2>Ringkasan belanja</h2>
     <p><span>Total pcs</span><strong>${items.reduce((sum, item) => sum + item.quantity, 0)} pcs</strong></p>
     <p class="cart-grand-total"><span>Total sementara</span><strong>${allPricesAvailable ? UrbannCart.formatRupiah(total) : "Lengkapi harga produk"}</strong></p>
-    ${allPricesAvailable
+    ${allPricesAvailable && stockCheck.ok
       ? '<a class="btn btn-primary cart-checkout" href="checkout.html">Lanjut ke checkout</a>'
-      : '<button class="btn btn-primary cart-checkout" type="button" disabled>Lengkapi harga produk</button>'}
+      : `<button class="btn btn-primary cart-checkout" type="button" disabled>${allPricesAvailable ? "Periksa stok keranjang" : "Lengkapi harga produk"}</button>
+        <p class="cart-stock-error">${window.urbannEscapeHtml(stockCheck.message)}</p>`}
     <p>Ongkir dan pembayaran akan dihitung setelah layanan terkait terhubung.</p>
   `;
 
   cartItemsContainer.querySelectorAll("[data-cart-quantity]").forEach((input) => {
     input.addEventListener("change", () => {
-      UrbannCart.setQuantity(Number(input.dataset.cartQuantity), input.value);
+      const result = UrbannCart.setQuantity(Number(input.dataset.cartQuantity), input.value);
       renderCart();
+      if (cartStatus) {
+        cartStatus.textContent = result?.ok ? "" : result?.message || "";
+        cartStatus.classList.toggle("is-error", !result?.ok);
+      }
     });
   });
 

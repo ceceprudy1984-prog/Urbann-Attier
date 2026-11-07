@@ -157,7 +157,7 @@ function renderDetail() {
           <label for="jumlahPembelian">Jumlah pembelian (pcs)</label>
           <input id="jumlahPembelian" type="number" min="1" step="1" value="1" inputmode="numeric">
           <p class="detail-purchase-help" id="infoPembelian" aria-live="polite">
-            Ecer berlaku mulai 1 pcs. Seri warna atau ukuran harus dibeli lengkap.
+            Harga ecer berlaku mulai 1 pcs. Harga grosir otomatis diterapkan saat jumlah mencapai ${detailEscapeHtml(produkAktif.grosirMinimal || 20)} pcs.
           </p>
           <p class="detail-purchase-summary" id="ringkasanPembelian" aria-live="polite"></p>
 
@@ -334,14 +334,14 @@ function perbaruiRingkasanPembelian() {
     inputJumlah.min = String(jumlahSatuSeri);
     inputJumlah.step = String(jumlahSatuSeri);
     inputJumlah.value = String(jumlah);
-    info.textContent = `Jumlah harus kelipatan ${jumlahSatuSeri} pcs agar setiap seri lengkap.`;
+    info.textContent = `Jumlah harus kelipatan ${jumlahSatuSeri} pcs agar setiap seri lengkap. Harga grosir otomatis berlaku mulai ${Number(produkAktif.grosirMinimal) || 20} pcs.`;
   } else {
     inputJumlah.min = "1";
     inputJumlah.step = "1";
     inputJumlah.value = String(jumlah);
     info.textContent = jumlah >= (Number(produkAktif.grosirMinimal) || 20)
-      ? `Jumlah ${produkAktif.grosirMinimal || 20} pcs atau lebih otomatis masuk harga grosir.`
-      : "Harga ecer berlaku untuk pembelian satuan. Pilih seri lengkap untuk harga serian.";
+      ? `Jumlah ${produkAktif.grosirMinimal || 20} pcs atau lebih otomatis memakai harga grosir.`
+      : `Harga ecer berlaku untuk pembelian satuan. Pilih seri lengkap untuk harga serian. Harga grosir otomatis berlaku mulai ${Number(produkAktif.grosirMinimal) || 20} pcs.`;
   }
 
   let tier = "ecer";

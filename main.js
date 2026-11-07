@@ -1,6 +1,6 @@
 const hamburger = document.querySelector(".hamburger-btn");
 const navLinks = document.querySelector(".nav-links");
-const BIAYA_PENGEMASAN = 5000;
+let BIAYA_PENGEMASAN = 5000;
 let produk = [];
 
 window.urbannProducts = produk;
@@ -122,10 +122,18 @@ async function loadCatalog() {
     throw new Error("Koneksi katalog belum tersedia. Muat ulang atau hubungi pengelola toko.");
   }
   publicSupabaseClient ||= window.supabase.createClient(config.url, config.publishableKey);
-  const { data: products, error } = await publicSupabaseClient.from("products")
-    .select("id, name, slug, category, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order")
-    .eq("is_active", true).order("sort_order", { ascending: true }).order("name", { ascending: true });
-  if (error) throw error;
+  window.urbannSupabaseClient = publicSupabaseClient;
+  const [productsResult, settingsResult] = await Promise.all([
+    publicSupabaseClient.from("products")
+      .select("id, name, slug, category, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order")
+      .eq("is_active", true).order("sort_order", { ascending: true }).order("name", { ascending: true }),
+    publicSupabaseClient.from("store_public_settings").select("packaging_fee").eq("id", 1).maybeSingle(),
+  ]);
+  if (productsResult.error) throw productsResult.error;
+  if (settingsResult.error) throw settingsResult.error;
+  const products = productsResult.data || [];
+  BIAYA_PENGEMASAN = settingsResult.data?.packaging_fee ?? 5000;
+  window.urbannPackagingFee = BIAYA_PENGEMASAN;
   if (!products.length) return [];
 
   const ids = products.map((product) => product.id);

@@ -36,7 +36,7 @@
       <section class="dashboard-view" id="dashboardView" hidden>
         <header class="dashboard-header">
           <a class="admin-brand" href="index.html">
-            <img src="assets/urban attier tf.png" alt="" />
+            <img src="assets/urban attier tf.png" alt="logo" />
             <span>Urbann Attier</span>
           </a>
           <div class="admin-header-actions">
@@ -48,9 +48,11 @@
         <div class="dashboard-content">
           <nav class="admin-nav" aria-label="Menu dashboard">
             <button class="admin-nav-button is-active" type="button" data-admin-view="overview">Ringkasan</button>
+            <button class="admin-nav-button" type="button" data-admin-view="orders">Pesanan</button>
             <button class="admin-nav-button" type="button" data-admin-view="products">Produk &amp; stok</button>
           </nav>
           <p class="dashboard-status" id="dashboardStatus" role="status" aria-live="polite"></p>
+          <a class="order-notification-link" id="orderNotificationLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Kirim pemberitahuan WhatsApp pelanggan</a>
 
           <section class="admin-page" id="overviewPage">
             <div class="page-heading">
@@ -64,8 +66,8 @@
 
             <section class="stat-grid" aria-label="Ringkasan toko">
               <article class="stat-card"><span>Produk</span><strong id="productCount">—</strong><small>Semua produk di katalog</small></article>
-              <article class="stat-card"><span>Pesanan</span><strong id="orderCount">—</strong><small>Total pesanan tersimpan</small></article>
-              <article class="stat-card"><span>Menunggu konfirmasi</span><strong id="pendingCount">—</strong><small>Pembayaran manual</small></article>
+              <article class="stat-card"><span>Pesanan</span><strong id="orderCount">—</strong><small>Total pesanan tersimpan</small><button class="stat-card-link" type="button" data-open-orders="all">Kelola pesanan</button></article>
+              <article class="stat-card"><span>Perlu tindakan admin</span><strong id="pendingCount">—</strong><small>Pesanan baru atau transfer yang dilaporkan</small><button class="stat-card-link" type="button" data-open-orders="pending">Tinjau pesanan</button></article>
             </section>
 
             <section class="panel" aria-labelledby="recentOrdersTitle">
@@ -74,11 +76,39 @@
               </div>
               <div class="table-scroll">
                 <table>
-                  <thead><tr><th>Nomor pesanan</th><th>Pelanggan</th><th>Total</th><th>Status</th><th>Tanggal</th></tr></thead>
+                  <thead><tr><th>Nomor pesanan</th><th>Pelanggan</th><th>Total sementara</th><th>Tahap pesanan</th><th>Tanggal</th><th>Aksi</th></tr></thead>
                   <tbody id="recentOrdersBody"></tbody>
                 </table>
               </div>
               <p class="empty-state" id="ordersEmpty" hidden>Belum ada pesanan yang tersimpan di database.</p>
+            </section>
+          </section>
+
+          <section class="admin-page" id="ordersPage" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">TRANSAKSI TOKO</p>
+                <h1>Pesanan</h1>
+                <p class="dashboard-welcome">Periksa pesanan, konfirmasi transfer, lalu perbarui proses pengiriman.</p>
+              </div>
+              <button class="button button-quiet" id="refreshOrdersButton" type="button">Muat ulang pesanan</button>
+            </div>
+            <p class="products-status" id="ordersStatus" role="status" aria-live="polite"></p>
+            <section class="panel product-panel" aria-labelledby="ordersPageTitle">
+              <div class="panel-heading product-panel-heading">
+                <div><p class="eyebrow">DAFTAR TRANSAKSI</p><h2 id="ordersPageTitle">Semua pesanan</h2></div>
+                <div class="orders-filters">
+                  <label for="orderFilter"><span class="sr-only">Filter pesanan</span><select id="orderFilter"><option value="all">Semua tahap</option><option value="pending">Perlu tindakan admin</option><option value="awaiting_payment">Menunggu pembayaran</option><option value="processing">Diproses</option><option value="shipped">Dikirim</option><option value="completed">Selesai</option><option value="cancelled">Dibatalkan</option></select></label>
+                  <label class="search-field" for="orderSearch"><span class="sr-only">Cari pesanan</span><input id="orderSearch" type="search" placeholder="Cari nomor / nama pelanggan" autocomplete="off" /></label>
+                </div>
+              </div>
+              <div class="table-scroll">
+                <table class="orders-table">
+                  <thead><tr><th>Nomor / tanggal</th><th>Pelanggan</th><th>Total</th><th>Pembayaran</th><th>Tahap pesanan</th><th>Aksi</th></tr></thead>
+                  <tbody id="ordersBody"></tbody>
+                </table>
+              </div>
+              <p class="empty-state" id="ordersPageEmpty" hidden>Belum ada pesanan yang tersimpan.</p>
             </section>
           </section>
 
@@ -103,7 +133,7 @@
               </div>
               <div class="table-scroll">
                 <table class="products-table">
-              <thead><tr><th>Produk</th><th>Harga ecer</th><th>Varian</th><th>Stok tercatat</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>Produk</th><th>Harga ecer</th><th>Harga serian</th><th>Harga grosir</th><th>Varian</th><th>Stok per warna / ukuran</th><th>Status</th><th>Aksi</th></tr></thead>
                   <tbody id="productsBody"></tbody>
                 </table>
               </div>
@@ -167,6 +197,32 @@
           </form>
         </section>
       </div>
+
+      <div class="modal-backdrop" id="orderModal" hidden>
+        <section class="product-modal order-modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+          <div class="modal-header">
+            <div><p class="eyebrow">PENGELOLAAN PESANAN</p><h2 id="orderModalTitle">Detail pesanan</h2></div>
+            <button class="modal-close" id="closeOrderModal" type="button" aria-label="Tutup detail pesanan">&times;</button>
+          </div>
+          <form id="orderForm" class="product-form">
+            <div class="order-customer-summary" id="orderCustomerSummary"></div>
+            <section class="form-section"><div><h3>Rincian produk</h3></div><div class="table-scroll"><table class="order-items-table"><thead><tr><th>Produk / pilihan</th><th>Jumlah</th><th>Harga / pcs</th><th>Subtotal</th></tr></thead><tbody id="orderItemsBody"></tbody></table></div></section>
+            <div class="order-money-summary" id="orderMoneySummary"></div>
+            <div class="form-grid">
+              <div class="form-field"><label for="orderStatusSelect">Tahap pesanan</label><select id="orderStatusSelect" required><option value="needs_confirmation">Perlu konfirmasi</option><option value="awaiting_payment">Menunggu pembayaran</option><option value="processing">Diproses</option><option value="shipped">Dikirim</option><option value="completed">Selesai</option><option value="cancelled">Dibatalkan</option></select></div>
+              <div class="form-field"><label for="paymentStatusSelect">Status pembayaran</label><select id="paymentStatusSelect" required><option value="unpaid">Belum dibayar</option><option value="waiting_confirmation">Transfer dilaporkan, perlu dicek</option><option value="paid">Lunas / transfer terverifikasi</option><option value="rejected">Transfer ditolak</option><option value="refunded">Dana dikembalikan</option></select></div>
+              <div class="form-field"><label for="orderShippingFee">Ongkos kirim (Rp)</label><input id="orderShippingFee" type="number" min="0" step="1" placeholder="Isi 0 jika tanpa ongkir" /></div>
+              <div class="form-field"><label for="orderShippingProvider">Ekspedisi</label><input id="orderShippingProvider" maxlength="100" placeholder="Contoh: JNE" /></div>
+              <div class="form-field"><label for="orderShippingService">Layanan</label><input id="orderShippingService" maxlength="100" placeholder="Contoh: REG" /></div>
+              <div class="form-field"><label for="orderTrackingNumber">Nomor resi</label><input id="orderTrackingNumber" maxlength="120" /></div>
+            </div>
+            <p class="order-workflow-note" id="orderWorkflowNote">Saat transfer sudah dicek sukses, pilih Lunas. Pesanan otomatis berpindah ke Diproses. Setelah status berubah dan tersimpan, WhatsApp akan disiapkan dengan pesan untuk pelanggan; admin tetap menekan Kirim. Membatalkan pesanan akan mengembalikan stok secara otomatis. Invoice A6 mencetak data pesanan yang sudah tersimpan; simpan perubahan terlebih dahulu.</p>
+            <p class="form-status product-form-status" id="orderFormStatus" role="status" aria-live="polite"></p>
+            <div class="modal-actions order-modal-actions"><button class="button button-quiet" id="cancelOrderEdit" type="button">Tutup</button><button class="button button-quiet" id="printOrderInvoice" type="button">Cetak invoice A6</button><button class="button button-primary" id="saveOrderButton" type="submit">Simpan perubahan</button></div>
+          </form>
+        </section>
+      </div>
+      <section id="invoicePrintArea" class="invoice-print" aria-label="Invoice pesanan" hidden></section>
     </main>
   </body>
 </html>

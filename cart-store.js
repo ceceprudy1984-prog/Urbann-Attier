@@ -36,6 +36,80 @@ const UrbannCart = (() => {
     return Math.max(count, Math.ceil(parsed / count) * count);
   }
 
+  function inventoryRequirements(product, item) {
+    const quantity = Number(item.quantity);
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return { ok: false, message: "Jumlah pembelian harus berupa angka bulat minimal 1 pcs." };
+    }
+
+    const selectedVariant = product.varianWarna.find((variant) => variant.nama === item.color);
+    const selectedSize = product.ukuran.find((size) => size === item.size);
+    if (!selectedVariant || !selectedSize) {
+      return { ok: false, message: `Pilihan warna atau ukuran untuk ${product.nama} sudah tidak tersedia. Muat ulang halaman dan pilih ulang.` };
+    }
+
+    if (item.mode === "ecer") {
+      return { ok: true, requirements: [{ variant: selectedVariant, size: selectedSize, quantity }] };
+    }
+
+    if (item.mode === "seri-warna") {
+      const count = product.varianWarna.length;
+      if (!count || quantity % count !== 0) {
+        return { ok: false, message: `Jumlah seri warna ${product.nama} harus kelipatan ${count} pcs.` };
+      }
+      const perVariant = quantity / count;
+      return {
+        ok: true,
+        requirements: product.varianWarna.map((variant) => ({ variant, size: selectedSize, quantity: perVariant })),
+      };
+    }
+
+    if (item.mode === "seri-ukuran") {
+      const count = product.ukuran.length;
+      if (!count || quantity % count !== 0) {
+        return { ok: false, message: `Jumlah seri ukuran ${product.nama} harus kelipatan ${count} pcs.` };
+      }
+      const perSize = quantity / count;
+      return {
+        ok: true,
+        requirements: product.ukuran.map((size) => ({ variant: selectedVariant, size, quantity: perSize })),
+      };
+    }
+
+    return { ok: false, message: "Jenis pembelian tidak dikenali. Hapus produk dari keranjang lalu pilih ulang." };
+  }
+
+  function validateItems(items) {
+    const requested = new Map();
+    const details = new Map();
+
+    for (const item of items) {
+      const product = findProduct(item.productId);
+      if (!product) return { ok: false, message: "Ada produk di keranjang yang sudah tidak tersedia. Hapus produk tersebut sebelum checkout." };
+      const result = inventoryRequirements(product, item);
+      if (!result.ok) return result;
+
+      for (const requirement of result.requirements) {
+        const key = `${product.id}::${requirement.variant.id}::${requirement.size}`;
+        requested.set(key, (requested.get(key) || 0) + requirement.quantity);
+        details.set(key, { product, ...requirement });
+      }
+    }
+
+    for (const [key, quantity] of requested) {
+      const { product, variant, size } = details.get(key);
+      const stock = variant.stok?.[size];
+      if (!Number.isInteger(stock) || stock < 0) {
+        return { ok: false, message: `Stok ${product.nama}, warna ${variant.nama}, ukuran ${size} belum diisi. Silakan hubungi admin toko.` };
+      }
+      if (quantity > stock) {
+        return { ok: false, message: `Stok ${product.nama}, warna ${variant.nama}, ukuran ${size} hanya ${stock} pcs, sedangkan keranjang membutuhkan ${quantity} pcs.` };
+      }
+    }
+
+    return { ok: true, message: "Stok untuk semua produk di keranjang tersedia." };
+  }
+
   function add(order) {
     const items = getItems();
     const product = findProduct(order.productId);
@@ -56,6 +130,9 @@ const UrbannCart = (() => {
       items.push(item);
     }
 
+    const stockCheck = validateItems(items);
+    if (!stockCheck.ok) return stockCheck;
+
     saveItems(items);
     return { ok: true, message: `${product.nama} ditambahkan ke keranjang.` };
   }
@@ -67,13 +144,20 @@ const UrbannCart = (() => {
     const product = findProduct(item.productId);
     if (!product) return;
     item.quantity = normalizeQuantity(product, item, quantity);
+    const stockCheck = validateItems(items);
+    if (!stockCheck.ok) return stockCheck;
     saveItems(items);
+    return { ok: true, message: "Jumlah berhasil diperbarui." };
   }
 
   function remove(index) {
     const items = getItems();
     items.splice(index, 1);
     saveItems(items);
+  }
+
+  function clear() {
+    saveItems([]);
   }
 
   function pricing(product, item) {
@@ -135,6 +219,8 @@ const UrbannCart = (() => {
     add,
     setQuantity,
     remove,
+    clear,
+    validateItems,
     pricing,
     description,
     formatRupiah,
