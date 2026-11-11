@@ -39,18 +39,30 @@
               <label>Nama lengkap<input name="name" type="text" autocomplete="name" placeholder="Nama penerima" required /></label>
               <label>Nomor WhatsApp<input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="08xxxxxxxxxx" required /></label>
               <label class="checkout-full">Alamat lengkap<textarea name="address" autocomplete="street-address" rows="3" placeholder="Nama jalan, nomor rumah, RT/RW, patokan" required></textarea></label>
-              <label>Provinsi<input name="province" autocomplete="address-level1" placeholder="Pilih provinsi" required /></label>
-              <label>Kota/Kabupaten<input name="city" autocomplete="address-level2" placeholder="Pilih kota/kabupaten" required /></label>
-              <label>Kecamatan<input name="district" placeholder="Pilih kecamatan" required /></label>
-              <label>Kode pos<input name="postalCode" autocomplete="postal-code" inputmode="numeric" placeholder="Kode pos" required /></label>
+              <label class="checkout-full">Cari kelurahan, kecamatan, atau kode pos
+                <div class="checkout-location-search">
+                  <input id="shippingDestinationSearch" type="search" autocomplete="postal-code" placeholder="Contoh: Cingcin, Soreang atau 40914" aria-describedby="shippingLocationHelp" />
+                  <button class="btn btn-secondary" id="searchShippingDestination" type="button">Cari wilayah</button>
+                </div>
+                <small id="shippingLocationHelp" class="checkout-field-hint">Pilih wilayah tujuan dari hasil pencarian agar ongkir dapat dihitung.</small>
+                <div class="checkout-location-results" id="shippingDestinationResults" role="listbox" aria-label="Hasil wilayah tujuan" hidden></div>
+                <p class="checkout-location-selected" id="shippingDestinationSelected" role="status" aria-live="polite"></p>
+              </label>
+              <input type="hidden" name="province" />
+              <input type="hidden" name="city" />
+              <input type="hidden" name="district" />
+              <input type="hidden" name="postalCode" />
               <label class="checkout-full">Catatan untuk kurir <span class="checkout-optional">(opsional)</span><textarea name="note" rows="2" placeholder="Contoh: rumah pagar putih, dekat minimarket"></textarea></label>
             </form>
           </section>
 
           <section class="checkout-card" aria-labelledby="deliveryTitle">
-            <div class="checkout-card-heading"><span class="checkout-number">3</span><div><h2 id="deliveryTitle">Pengiriman</h2><p>Ongkir akan dikonfirmasi admin melalui WhatsApp.</p></div></div>
-            <div class="checkout-pending"><span class="checkout-pending-icon" aria-hidden="true">⌁</span><div><strong>Tarif pengiriman dikonfirmasi manual</strong><p>Admin akan memeriksa alamat dan memberi tahu pilihan ekspedisi serta biaya kirim sebelum pembayaran.</p></div></div>
-            <p class="checkout-shipping-hint">Total sementara mencakup produk dan biaya pengemasan yang tercantum, tetapi belum termasuk ongkir. Jangan membayar sebelum menerima total akhir dan instruksi admin.</p>
+            <div class="checkout-card-heading"><span class="checkout-number">3</span><div><h2 id="deliveryTitle">Pilih pengiriman</h2><p>Periksa tarif J&amp;T, JNE, SiCepat, SPX, dan Lion Parcel.</p></div></div>
+            <p class="checkout-package-weight" id="shippingPackageWeight">Berat paket dihitung dari jumlah produk.</p>
+            <button class="btn btn-secondary checkout-rate-button" id="loadShippingRates" type="button" disabled>Cek ongkir</button>
+            <p class="checkout-action-status" id="shippingRateStatus" role="status" aria-live="polite"></p>
+            <div class="checkout-rate-list" id="shippingRateList" role="radiogroup" aria-label="Pilihan layanan pengiriman"></div>
+            <p class="checkout-shipping-hint">Tarif yang tampil merupakan perkiraan dari RajaOngkir. Admin akan memeriksa kembali tarif dan total akhir sebelum pembayaran.</p>
           </section>
 
           <section class="checkout-card" aria-labelledby="paymentTitle">
@@ -63,11 +75,11 @@
           <h2 id="checkoutSummaryTitle">Ringkasan pembayaran</h2>
           <div id="checkoutTotals"></div>
           <p class="checkout-total-row"><span>Biaya pengemasan</span><strong id="checkoutPackagingFee">Akan dikonfirmasi admin</strong></p>
-          <p class="checkout-total-row"><span>Ongkos kirim</span><strong>Menunggu tarif kurir</strong></p>
-          <p class="checkout-grand-total"><span>Total sementara<br><small>(belum termasuk ongkir)</small></span><strong id="checkoutGrandTotal">-</strong></p>
+          <p class="checkout-total-row"><span>Ongkos kirim</span><strong id="checkoutShippingFee">Pilih layanan</strong></p>
+          <p class="checkout-grand-total"><span>Total sementara<br><small>termasuk ongkir perkiraan</small></span><strong id="checkoutGrandTotal">-</strong></p>
           <button class="btn btn-primary checkout-submit" id="checkoutWhatsAppButton" type="submit" form="recipientForm" disabled>Memuat pesanan…</button>
           <p class="checkout-action-status" id="checkoutActionStatus" role="status" aria-live="polite"></p>
-          <p class="checkout-summary-note">Setelah tombol ditekan, pesanan dicatat dan stok dikurangi. Tekan Kirim di WhatsApp agar permintaan sampai ke admin. Jika batal setelah checkout, hubungi admin untuk memulihkan stok.</p>
+          <p class="checkout-summary-note">Setelah tombol ditekan, pesanan dicatat dan stok dikurangi. Tarif ongkir dan total akhir tetap dikonfirmasi admin melalui WhatsApp. Tekan Kirim agar pesanan sampai ke admin.</p>
           <a class="checkout-back-link" href="keranjang.html">Kembali dan ubah pesanan</a>
         </aside>
       </div>

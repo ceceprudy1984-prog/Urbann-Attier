@@ -1,34 +1,47 @@
-# Rencana Supabase dan Payment Gateway — Urbann Attier
+# Rencana Supabase, Ongkir, dan Payment Gateway — Urbann Attier
 
-**Status:** Dashboard dan katalog publik sudah dihubungkan ke Supabase; impor katalog lama serta pengaktifan Realtime/Storage masih perlu dijalankan.
+## Status saat ini
 
-Permintaan pengguna pada 2026-11-04 membuka kembali rencana ini. Akun Supabase sudah dimiliki; project yang dipakai website lain harus tetap tidak tersentuh. Buat project terpisah khusus Urbann Attier.
+- Website dan dashboard admin memakai project Supabase terpisah `urbann attier store`.
+- Checkout WhatsApp manual sudah berjalan. Harga, pesanan, dan stok diperiksa melalui database.
+- Fungsi RajaOngkir `shipping-rates` telah dibuat dan diuji dari Supabase. Pencarian tujuan dan perhitungan ongkir berjalan; checkout menampilkan tarif sebagai perkiraan dan admin mengonfirmasi biaya akhir.
+- Perubahan status pengiriman otomatis disimpan sebagai rencana lanjutan. Penerapannya memerlukan API pelacakan AWB dan saluran notifikasi pelanggan; dukungan AWB berbeda antar-ekspedisi.
 
-## Rencana kerja
+## Rencana payment gateway
 
-1. Project `urbann attier store` sudah dibuat dan berstatus Healthy di organisasi Urbann Attier. Region aktual yang ditampilkan adalah Tokyo (`ap-northeast-1`), meski pilihan awal pada formulir adalah Asia-Pacific.
-2. Migrasi awal tabel produk, foto varian, ukuran, stok, pesanan, item pesanan, pembayaran manual, dan pengaturan toko sudah berhasil dijalankan pada project baru.
-3. Akun admin pertama sudah terhubung ke `admin_users` dan ditandai aktif. Kebijakan Row Level Security tersedia dari migrasi.
-4. Dashboard login/ringkasan dan modul produk/stok dibuat. Modul mendukung harga, varian, ukuran, update stok terpisah, edit, aktif/draft, hapus produk, serta pemilihan foto lokal. Katalog publik kini membaca produk aktif dari Supabase dan bisa menerima pembaruan realtime setelah migrasi publication dijalankan. Jalankan impor katalog satu kali di `supabase/seed/initial_catalog_import.sql`, lalu `202611040003_enable_catalog_realtime.sql`; jalankan `202611040002_product_image_storage.sql` sebelum upload foto baru. Lanjutkan pengelolaan pesanan dan pengaturan toko.
-5. Setelah fitur manual siap, pilih gateway dan ekspedisi bila klien menyetujuinya; siapkan Edge Functions untuk validasi order, transaksi, webhook, dan perubahan stok.
-6. Sebelum produksi, pilih paket layanan yang sesuai dan aktifkan akun/payment gateway produksi.
+Keputusan awal: **Midtrans Snap, mulai dari Sandbox**. Akun Midtrans belum dibuat. Jangan mengaktifkan transaksi produksi sebelum klien menyetujui alur, akun merchant, biaya, dan metode pembayaran.
 
-## Prinsip implementasi
+1. Siapkan akun Midtrans Sandbox dan simpan Server Key sebagai Supabase Secret. Client Key boleh dipakai pada halaman checkout; Server Key tidak boleh masuk ke HTML, JavaScript browser, GitHub, atau chat.
+2. Buat fungsi server untuk menghitung ulang harga, kemasan, ongkir terpilih, dan total dari data yang dipercaya. Jangan menerima jumlah pembayaran dari browser sebagai nilai final.
+3. Buat pesanan berstatus menunggu pembayaran dan minta Snap token dari Midtrans melalui Supabase Edge Function. Checkout menampilkan UI pembayaran Snap.
+4. Terima notifikasi Midtrans melalui fungsi webhook. Verifikasi signature/status transaksi dari sisi server dan proses notifikasi secara idempoten agar pembayaran serta stok tidak tercatat dua kali.
+5. Pada status pembayaran sukses yang tervalidasi, ubah status pembayaran/pesanan dan kurangi stok tepat satu kali. Pesanan yang masih menunggu pembayaran perlu reservasi stok sementara agar tidak oversold; reservasi dilepas ketika transaksi kedaluwarsa/gagal sesuai kebijakan yang ditetapkan.
+6. Uji alur berhasil, pending, dibatalkan, kedaluwarsa, notifikasi ganda, dan kegagalan API di Sandbox. Pindah ke kredensial produksi setelah uji dan persetujuan klien.
 
-- Pembayaran awal dilakukan manual melalui WhatsApp sesuai ruang lingkup yang dipilih untuk presentasi.
-- Jika gateway diaktifkan nanti, mulai dengan mode sandbox; jangan memakai uang sungguhan saat pengujian.
-- Simpan kunci rahasia gateway hanya di Supabase Edge Function Secrets, jangan di HTML atau JavaScript browser.
-- Harga dan stok selalu divalidasi di server.
-- Stok hanya berkurang setelah webhook pembayaran yang sah diterima.
-- Proyek Supabase Free dapat dijeda jika tidak aktif; perhitungkan ini selama pengujian.
+## Keputusan ongkir untuk checkout gateway
 
-## Status teknis dan informasi berikutnya
+- Tarif yang dipilih pelanggan dari RajaOngkir menjadi nilai ongkir yang dibayar; admin tidak mengonfirmasi ulang sebelum pembayaran.
+- Sebelum produksi, pastikan nilai tarif mewakili berat yang benar-benar ditagihkan ekspedisi. Checkout saat ini mengirim berat aktual 500 gram per potong; ukuran paket belum dipakai pada permintaan kalkulasi. Perbedaan berat aktual dan berat volume dapat menimbulkan selisih yang perlu ditanggung toko.
 
-- Migrasi SQL lokal tersedia di `supabase/migrations/202611040001_urbann_attier_initial_schema.sql` dan sudah berhasil dijalankan pada project baru `urbann attier store`.
-- Migrasi tersebut sempat dijalankan pada project lama `urbann attier Project`, yang digunakan website lain. Project lama sudah aktif kembali; tabel tambahan dari migrasi perlu ditinjau sebelum dibersihkan. Jangan menjeda atau menghapus project lama.
-- Project percobaan `Rudy84 Project` sedang dijeda untuk menyediakan kuota project Free; data project tersebut masih tersimpan.
-- Akun admin pertama berhasil ditambahkan ke `admin_users` pada project baru.
-- Koneksi dashboard berikutnya memakai Project URL dan publishable key `sb_publishable_...`; jangan gunakan secret/service-role key di browser.
-- File `admin.html`, `admin.css`, `admin.js`, dan `supabase-config.js` disiapkan untuk website statis. Login dan pembacaan ringkasan sebelumnya berhasil di browser. Tombol “Atur stok” membuka editor stok dengan tombol simpan mandiri; produk dapat dihapus dengan konfirmasi dan snapshot pesanan lama tetap tersimpan. Upload foto memakai bucket `product-images`, dibatasi pada tipe gambar dan 10 MB per file; jalankan migrasi Storage terkait sebelum dipakai. Foto yang diunggah berada di bucket publik agar dapat ditampilkan di website, sedangkan unggah/hapus dibatasi untuk admin aktif. Halaman utama, detail, keranjang, dan checkout membaca katalog aktif melalui `main.js`; sinkronisasi instan pada tab yang terbuka memerlukan migrasi Realtime. Impor awal menjaga ID produk lama (`0`–`4`) agar isi keranjang tersimpan tidak berubah. Jangan taruh secret/service-role key di frontend.
-- Data katalog, stok final, dan lokasi asal pengiriman masih perlu diisi/ditetapkan.
-- Nama provider gateway dan URL toko/deployment baru diperlukan saat tahap otomatisasi pembayaran.
+## Rencana lanjutan pelacakan pengiriman
+
+- Setelah admin memasukkan kurir dan nomor resi, sistem dapat memeriksa tracking secara berkala dan memperbarui status pesanan.
+- Untuk mengirim pesan WhatsApp otomatis dibutuhkan WhatsApp Business Platform/API atau penyedia resmi; tautan `wa.me` saat ini hanya membuka pesan yang perlu dikirim manual.
+- Periksa dukungan tracking tiap kurir dan paket RajaOngkir sebelum implementasi. Fitur kalkulasi ongkir yang aktif saat ini tidak otomatis membuat resi atau mengambil status perjalanan paket.
+
+## Aturan keamanan dan alur bisnis
+
+- Harga, stok, total, dan status pembayaran diputuskan di server/database, bukan berdasarkan data browser.
+- Semua credential provider disimpan di Supabase Edge Function Secrets.
+- Browser hanya menerima data publik dan token Snap yang dibutuhkan untuk membuka UI pembayaran.
+- Notifikasi Midtrans dianggap valid setelah diverifikasi; callback di browser bukan bukti pembayaran.
+- Pembayaran manual tetap diverifikasi admin jika metode tersebut dipertahankan sebagai pilihan.
+- Project Supabase lama yang dipakai website lain tidak boleh diubah atau dijeda.
+
+## Catatan teknis
+
+- Edge Function ongkir: `supabase/functions/shipping-rates/index.ts`.
+- Migrasi estimasi ongkir: `supabase/migrations/202611110001_store_shipping_quotes.sql`.
+- Checkout: `checkout.html` dan `checkout.js`.
+- Skema order/payment dan proses stok saat ini berada pada migrasi `supabase/migrations/202611040001_urbann_attier_initial_schema.sql`, `202611050001_checkout_stock_reservation.sql`, `202611060001_admin_order_workflow.sql`, dan migrasi ongkir.
+- Integrasi Snap belum diimplementasikan. Nama secret, fungsi, tabel, dan aturan reservasi akan ditambahkan secara bertahap setelah akses Sandbox tersedia.
