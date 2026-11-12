@@ -62,12 +62,12 @@
             <button class="btn btn-secondary checkout-rate-button" id="loadShippingRates" type="button" disabled>Cek ongkir</button>
             <p class="checkout-action-status" id="shippingRateStatus" role="status" aria-live="polite"></p>
             <div class="checkout-rate-list" id="shippingRateList" role="radiogroup" aria-label="Pilihan layanan pengiriman"></div>
-            <p class="checkout-shipping-hint">Tarif yang tampil merupakan perkiraan dari RajaOngkir. Admin akan memeriksa kembali tarif dan total akhir sebelum pembayaran.</p>
+            <p class="checkout-shipping-hint">Tarif dihitung dari RajaOngkir dan diverifikasi ulang saat pesanan dibuat. Nilai ongkir dan total pesanan ditampilkan kembali di halaman pembayaran Midtrans.</p>
           </section>
 
           <section class="checkout-card" aria-labelledby="paymentTitle">
-            <div class="checkout-card-heading"><span class="checkout-number">4</span><div><h2 id="paymentTitle">Konfirmasi Pembayaran</h2><p>Admin akan memberikan total akhir dan instruksi pembayaran melalui WhatsApp.</p></div></div>
-            <div class="checkout-pending checkout-payment-pending"><span class="checkout-pending-icon" aria-hidden="true">◷</span><div><strong>Pembayaran dikonfirmasi manual</strong><p>Pesanan belum dianggap dibayar setelah pesan WhatsApp dikirim. Admin akan memeriksa pembayaran secara terpisah.</p></div></div>
+            <div class="checkout-card-heading"><span class="checkout-number">4</span><div><h2 id="paymentTitle">Pembayaran aman</h2><p>Selesaikan pembayaran melalui halaman Midtrans setelah memeriksa total pesanan.</p></div></div>
+            <div class="checkout-pending checkout-payment-pending"><span class="checkout-pending-icon" aria-hidden="true">✓</span><div><strong>Status diperbarui otomatis</strong><p>Pesanan diproses setelah Midtrans mengirim konfirmasi pembayaran yang valid.</p></div></div>
           </section>
         </div>
 
@@ -77,9 +77,9 @@
           <p class="checkout-total-row"><span>Biaya pengemasan</span><strong id="checkoutPackagingFee">Akan dikonfirmasi admin</strong></p>
           <p class="checkout-total-row"><span>Ongkos kirim</span><strong id="checkoutShippingFee">Pilih layanan</strong></p>
           <p class="checkout-grand-total"><span>Total sementara<br><small>termasuk ongkir perkiraan</small></span><strong id="checkoutGrandTotal">-</strong></p>
-          <button class="btn btn-primary checkout-submit" id="checkoutWhatsAppButton" type="submit" form="recipientForm" disabled>Memuat pesanan…</button>
+          <button class="btn btn-primary checkout-submit" id="checkoutPaymentButton" type="submit" form="recipientForm" disabled>Memuat pesanan…</button>
           <p class="checkout-action-status" id="checkoutActionStatus" role="status" aria-live="polite"></p>
-          <p class="checkout-summary-note">Setelah tombol ditekan, pesanan dicatat dan stok dikurangi. Tarif ongkir dan total akhir tetap dikonfirmasi admin melalui WhatsApp. Tekan Kirim agar pesanan sampai ke admin.</p>
+          <p class="checkout-summary-note">Tarif ongkir dan total dihitung kembali sebelum pembayaran. Stok pesanan yang menunggu pembayaran dicadangkan sementara dan dikembalikan jika transaksi gagal atau kedaluwarsa.</p>
           <a class="checkout-back-link" href="keranjang.html">Kembali dan ubah pesanan</a>
         </aside>
       </div>

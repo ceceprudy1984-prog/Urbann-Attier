@@ -102,7 +102,9 @@ function mapCatalog(products, variants, images, sizes, inventory) {
         const stockBySize = {};
         productSizes.forEach((size) => {
           const row = inventory.find((stock) => stock.variant_id === variant.id && stock.size_id === size.id);
-          stockBySize[size.size_name] = row ? row.stock_quantity : null;
+          stockBySize[size.size_name] = row && row.stock_quantity != null
+            ? Math.max(0, Number(row.stock_quantity) - Number(row.reserved_quantity || 0))
+            : null;
         });
         return {
           id: variant.id,
@@ -141,7 +143,7 @@ async function loadCatalog() {
     publicSupabaseClient.from("product_variants").select("id, product_id, color_name, sort_order").in("product_id", ids).eq("is_active", true).order("sort_order"),
     publicSupabaseClient.from("product_images").select("id, product_id, variant_id, image_path, alt_text, sort_order").in("product_id", ids).order("sort_order"),
     publicSupabaseClient.from("product_sizes").select("id, product_id, size_name, bust_cm, garment_length_cm, sleeve_length_cm, sort_order").in("product_id", ids).order("sort_order"),
-    publicSupabaseClient.from("inventory").select("product_id, variant_id, size_id, stock_quantity").in("product_id", ids),
+    publicSupabaseClient.from("inventory").select("product_id, variant_id, size_id, stock_quantity, reserved_quantity").in("product_id", ids),
   ]);
   const failed = results.find((result) => result.error);
   if (failed) throw failed.error;

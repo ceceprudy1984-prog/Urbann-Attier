@@ -4,7 +4,7 @@ const checkoutContent = document.querySelector("#checkoutContent");
 const checkoutEmpty = document.querySelector("#checkoutEmpty");
 const recipientForm = document.querySelector("#recipientForm");
 const checkoutActionStatus = document.querySelector("#checkoutActionStatus");
-const checkoutWhatsAppButton = document.querySelector("#checkoutWhatsAppButton");
+const checkoutWhatsAppButton = document.querySelector("#checkoutPaymentButton");
 const destinationSearchInput = document.querySelector("#shippingDestinationSearch");
 const destinationSearchButton = document.querySelector("#searchShippingDestination");
 const destinationResults = document.querySelector("#shippingDestinationResults");
@@ -13,10 +13,8 @@ const loadShippingRatesButton = document.querySelector("#loadShippingRates");
 const shippingRateStatus = document.querySelector("#shippingRateStatus");
 const shippingRateList = document.querySelector("#shippingRateList");
 const checkoutTokenStorageKey = "urbann-attier-checkout-token-v1";
+const checkoutFingerprintStorageKey = "urbann-attier-checkout-fingerprint-v1";
 const SHIPPING_WEIGHT_PER_PIECE_GRAMS = 500;
-
-// Ganti dengan nomor WhatsApp bisnis format internasional tanpa tanda + atau spasi.
-const STORE_WHATSAPP = "6282318500057";
 
 let selectedDestination = null;
 let availableShippingRates = [];
@@ -33,6 +31,39 @@ function getItemsWeight(items = UrbannCart.getItems()) {
   return items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) * SHIPPING_WEIGHT_PER_PIECE_GRAMS;
 }
 
+function getCheckoutPayloadSnapshot() {
+  const items = UrbannCart.getItems();
+  const recipient = recipientForm ? new FormData(recipientForm) : new FormData();
+  const customer = {
+    name: String(recipient.get("name") || "").trim(),
+    phone: String(recipient.get("phone") || "").trim(),
+    address: String(recipient.get("address") || "").trim(),
+    province: String(recipient.get("province") || "").trim(),
+    city: String(recipient.get("city") || "").trim(),
+    district: String(recipient.get("district") || "").trim(),
+    postal_code: String(recipient.get("postalCode") || "").trim(),
+    note: String(recipient.get("note") || "").trim(),
+  };
+  const cartSnapshot = items.map((item) => ({
+    product_id: Number(item.productId),
+    mode: item.mode,
+    color: item.color,
+    size: item.size,
+    quantity: Number(item.quantity),
+  }));
+  return { customer, items: cartSnapshot };
+}
+
+function getCheckoutFingerprint() {
+  return JSON.stringify(getCheckoutPayloadSnapshot());
+}
+
+function hasMatchingCheckoutToken() {
+  const token = sessionStorage.getItem(checkoutTokenStorageKey);
+  const savedFingerprint = sessionStorage.getItem(checkoutFingerprintStorageKey);
+  return Boolean(token && savedFingerprint && savedFingerprint === getCheckoutFingerprint());
+}
+
 function resetShippingRates(message = "") {
   availableShippingRates = [];
   selectedShippingRate = null;
@@ -46,7 +77,7 @@ function updateOrderButton() {
 
   const items = UrbannCart.getItems();
   const stockCheck = UrbannCart.validateItems(items);
-  const hasPendingCheckout = Boolean(sessionStorage.getItem(checkoutTokenStorageKey));
+  const hasPendingCheckout = hasMatchingCheckoutToken();
   const selectedRateMatchesCart = selectedShippingRate
     && selectedShippingRate.weightGrams === getItemsWeight(items);
   const canSubmit = allPricesAvailable
@@ -64,7 +95,7 @@ function updateOrderButton() {
   } else if (!stockCheck.ok && !hasPendingCheckout) {
     checkoutWhatsAppButton.textContent = "Periksa stok keranjang";
   } else {
-    checkoutWhatsAppButton.textContent = "Kirim pesanan ke WhatsApp";
+    checkoutWhatsAppButton.textContent = "Bayar dengan Midtrans";
   }
 
   if (!stockCheck.ok) {
@@ -166,15 +197,17 @@ function renderCheckout() {
 window.URBANN_PRODUCTS_READY.then(renderCheckout);
 window.addEventListener("urbann:catalog-updated", renderCheckout);
 
-function getCheckoutToken() {
+function getCheckoutToken(fingerprint) {
   let token = sessionStorage.getItem(checkoutTokenStorageKey);
-  if (!token) {
+  const savedFingerprint = sessionStorage.getItem(checkoutFingerprintStorageKey);
+  if (!token || savedFingerprint !== fingerprint) {
     token = globalThis.crypto?.randomUUID?.()
       || "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
         const random = Math.random() * 16 | 0;
         return (char === "x" ? random : (random & 0x3 | 0x8)).toString(16);
       });
     sessionStorage.setItem(checkoutTokenStorageKey, token);
+    sessionStorage.setItem(checkoutFingerprintStorageKey, fingerprint);
   }
   return { key: checkoutTokenStorageKey, token };
 }
@@ -334,14 +367,46 @@ shippingRateList?.addEventListener("change", (event) => {
   updateCheckoutSummary();
 });
 
+let snapScriptPromise = null;
+
+async function getFunctionErrorMessage(error, fallback = "Pembayaran belum dapat disiapkan.") {
+  const response = error?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const payload = await response.clone().json();
+      if (typeof payload?.error === "string" && payload.error.trim()) return payload.error;
+      if (typeof payload?.message === "string" && payload.message.trim()) return payload.message;
+    } catch {
+      // Use the SDK message when the response is not JSON.
+    }
+  }
+  return error?.message || fallback;
+}
+
+function loadMidtransSnap(clientKey) {
+  if (window.snap?.pay) return Promise.resolve();
+  if (snapScriptPromise) return snapScriptPromise;
+
+  snapScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
+    script.dataset.clientKey = clientKey;
+    script.onload = () => window.snap?.pay
+      ? resolve()
+      : reject(new Error("Komponen pembayaran Midtrans belum siap."));
+    script.onerror = () => reject(new Error("Halaman pembayaran Midtrans gagal dimuat. Periksa koneksi lalu coba lagi."));
+    document.head.append(script);
+  }).catch((error) => {
+    snapScriptPromise = null;
+    throw error;
+  });
+  return snapScriptPromise;
+}
+
 recipientForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   checkoutActionStatus.textContent = "";
 
-  if (!/^62\d{8,13}$/.test(STORE_WHATSAPP)) {
-    checkoutActionStatus.textContent = "Nomor WhatsApp toko belum diatur. Ganti nilai STORE_WHATSAPP di checkout.js dengan nomor bisnis yang aktif.";
-    return;
-  }
   if (!selectedDestination || !selectedShippingRate) {
     checkoutActionStatus.textContent = "Pilih wilayah tujuan dan layanan pengiriman sebelum melanjutkan.";
     return;
@@ -349,13 +414,8 @@ recipientForm?.addEventListener("submit", async (event) => {
 
   const items = UrbannCart.getItems();
   const stockCheck = UrbannCart.validateItems(items);
-  const hasPendingCheckout = Boolean(sessionStorage.getItem(checkoutTokenStorageKey));
   if (!items.length) {
     checkoutActionStatus.textContent = "Keranjang kosong. Tambahkan produk sebelum melanjutkan checkout.";
-    return;
-  }
-  if (!stockCheck.ok && !hasPendingCheckout) {
-    checkoutActionStatus.textContent = stockCheck.message;
     return;
   }
   if (selectedShippingRate.weightGrams !== getItemsWeight(items)) {
@@ -364,102 +424,67 @@ recipientForm?.addEventListener("submit", async (event) => {
     return;
   }
 
-  const recipient = new FormData(recipientForm);
-  const cartSnapshot = items.map((item) => ({
-    product_id: Number(item.productId),
-    mode: item.mode,
-    color: item.color,
-    size: item.size,
-    quantity: Number(item.quantity),
-  }));
-  const { key: tokenKey, token } = getCheckoutToken();
-  const customer = {
-    name: String(recipient.get("name") || "").trim(),
-    phone: String(recipient.get("phone") || "").trim(),
-    address: String(recipient.get("address") || "").trim(),
-    province: String(recipient.get("province") || "").trim(),
-    city: String(recipient.get("city") || "").trim(),
-    district: String(recipient.get("district") || "").trim(),
-    postal_code: String(recipient.get("postalCode") || "").trim(),
-    note: String(recipient.get("note") || "").trim(),
-  };
+  const { customer, items: cartSnapshot } = getCheckoutPayloadSnapshot();
   if (!customer.province || !customer.city || !customer.district || !customer.postal_code) {
     checkoutActionStatus.textContent = "Pilih wilayah tujuan dari hasil pencarian RajaOngkir terlebih dahulu.";
     return;
   }
+  const fingerprint = JSON.stringify({ customer, items: cartSnapshot });
+  const hasPendingCheckout = sessionStorage.getItem(checkoutTokenStorageKey)
+    && sessionStorage.getItem(checkoutFingerprintStorageKey) === fingerprint;
+  if (!stockCheck.ok && !hasPendingCheckout) {
+    checkoutActionStatus.textContent = stockCheck.message;
+    return;
+  }
+  const { token } = getCheckoutToken(fingerprint);
 
   checkoutWhatsAppButton.disabled = true;
-  checkoutWhatsAppButton.textContent = "Memeriksa stok dan mencatat pesanan…";
-  checkoutActionStatus.textContent = "Tarif yang dipilih dicatat sebagai perkiraan; admin akan mengonfirmasi total akhir.";
-  const whatsappWindow = window.open("about:blank", "_blank");
+  checkoutWhatsAppButton.textContent = "Menyiapkan pembayaran…";
+  checkoutActionStatus.textContent = "Memeriksa stok, harga, dan tarif pengiriman di server.";
 
   try {
     const client = window.urbannSupabaseClient;
-    if (!client) throw new Error("Koneksi database belum siap. Muat ulang halaman lalu coba lagi.");
+    if (!client) throw new Error("Koneksi Supabase belum siap. Muat ulang halaman lalu coba lagi.");
 
-    const { data, error } = await client.rpc("create_whatsapp_order_with_shipping", {
-      p_checkout_token: token,
-      p_customer: customer,
-      p_items: cartSnapshot,
-      p_shipping: {
-        destination_id: selectedDestination.id,
-        weight_grams: selectedShippingRate.weightGrams,
-        provider_code: selectedShippingRate.code,
-        service: selectedShippingRate.service,
-        fee: selectedShippingRate.cost,
+    const { data, error } = await client.functions.invoke("create-midtrans-payment", {
+      body: {
+        checkoutToken: token,
+        customer,
+        items: cartSnapshot,
+        shipping: {
+          destinationId: selectedDestination.id,
+          weightGrams: selectedShippingRate.weightGrams,
+          code: selectedShippingRate.code,
+          service: selectedShippingRate.service,
+        },
       },
     });
-    if (error) throw error;
-    if (!data?.order_number) throw new Error("Pesanan belum mendapat nomor konfirmasi dari database.");
-
-    const orderLines = items.map((item) => {
-      const product = UrbannCart.findProduct(item.productId);
-      return `- ${product?.nama || "Produk"} | ${UrbannCart.description(product, item)} | ${item.quantity} pcs`;
-    });
-    const subtotal = Number(data.subtotal_amount);
-    const packagingFee = Number(data.packaging_fee);
-    const shippingFee = Number(data.shipping_fee ?? selectedShippingRate.cost);
-    const total = Number(data.total_with_shipping ?? subtotal + packagingFee + shippingFee);
-    const message = [
-      "Halo Urbann Attier, saya ingin konfirmasi pesanan:",
-      `Nomor pesanan: ${data.order_number}`,
-      "",
-      ...orderLines,
-      "",
-      `Subtotal produk: ${UrbannCart.formatRupiah(subtotal)}`,
-      `Biaya pengemasan: ${UrbannCart.formatRupiah(packagingFee)}`,
-      `Pilihan kurir: ${selectedShippingRate.courier} ${selectedShippingRate.service}`,
-      `Perkiraan ongkir: ${UrbannCart.formatRupiah(shippingFee)}`,
-      `Total sementara: ${UrbannCart.formatRupiah(total)}`,
-      "Mohon konfirmasi tarif ongkir dan total akhir sebelum pembayaran.",
-      "",
-      "Data penerima:",
-      `Nama: ${customer.name}`,
-      `WhatsApp: ${customer.phone}`,
-      `Alamat: ${customer.address}`,
-      `Kelurahan: ${selectedDestination.subdistrict || "-"}`,
-      `Kecamatan: ${customer.district}`,
-      `Kota/Kabupaten: ${customer.city}`,
-      `Provinsi: ${customer.province}`,
-      `Kode pos: ${customer.postal_code}`,
-      `Catatan kurir: ${customer.note || "-"}`,
-    ].join("\n");
-
-    const whatsappUrl = `https://wa.me/${STORE_WHATSAPP}?text=${encodeURIComponent(message)}`;
-    UrbannCart.clear();
-    sessionStorage.removeItem(tokenKey);
-    if (whatsappWindow && !whatsappWindow.closed) {
-      whatsappWindow.location.href = whatsappUrl;
-      whatsappWindow.opener = null;
-      checkoutActionStatus.textContent = `Pesanan ${data.order_number} tercatat dan stok telah diperbarui. Tekan Kirim di WhatsApp agar permintaan sampai ke admin.`;
-    } else {
-      checkoutActionStatus.textContent = `Pesanan ${data.order_number} tercatat dan stok telah diperbarui. WhatsApp akan dibuka di halaman ini.`;
-      window.location.assign(whatsappUrl);
+    if (error) throw new Error(data?.error || await getFunctionErrorMessage(error));
+    if (data?.error || !data?.snapToken || !data?.clientKey || !data?.orderNumber) {
+      throw new Error(data?.error || "Respons pembayaran tidak lengkap.");
     }
+
+    await loadMidtransSnap(data.clientKey);
+    checkoutActionStatus.textContent = `Pesanan ${data.orderNumber} dibuat dengan total ${data.formattedAmount}. Selesaikan pembayaran pada jendela Midtrans.`;
+    window.snap.pay(data.snapToken, {
+      onSuccess: () => {
+        checkoutWhatsAppButton.disabled = true;
+        checkoutWhatsAppButton.textContent = "Menunggu konfirmasi pembayaran";
+        checkoutActionStatus.textContent = `Midtrans melaporkan pembayaran pesanan ${data.orderNumber} selesai. Server sedang mengonfirmasi transaksi; jangan lakukan pembayaran ulang.`;
+      },
+      onPending: () => {
+        checkoutActionStatus.textContent = `Pesanan ${data.orderNumber} menunggu pembayaran. Anda dapat melanjutkan pembayaran dari checkout ini.`;
+      },
+      onError: () => {
+        checkoutActionStatus.textContent = `Pembayaran pesanan ${data.orderNumber} belum berhasil. Coba lagi atau pilih metode pembayaran lain.`;
+      },
+      onClose: () => {
+        checkoutActionStatus.textContent = `Jendela pembayaran ditutup. Pesanan ${data.orderNumber} tetap menunggu pembayaran; klik tombol lagi untuk melanjutkan.`;
+      },
+    });
   } catch (error) {
-    if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
-    checkoutActionStatus.textContent = `Pesanan belum diproses: ${error.message || "Terjadi kesalahan."}`;
-    checkoutWhatsAppButton.disabled = false;
-    checkoutWhatsAppButton.textContent = "Coba checkout lagi";
+    checkoutActionStatus.textContent = `Pembayaran belum dapat dibuka: ${error.message || "Terjadi kesalahan."}`;
+  } finally {
+    updateOrderButton();
   }
 });

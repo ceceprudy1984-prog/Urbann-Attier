@@ -1,0 +1,5 @@
+[functions.create-midtrans-payment]
+verify_jwt = false
+
+[functions.midtrans-notification]
+verify_jwt = false

@@ -306,9 +306,16 @@ function renderOrders() {
   $("#ordersBody").querySelectorAll("[data-open-order]").forEach((button) => button.addEventListener("click", () => openOrderEditor(button.dataset.openOrder)));
 }
 
-function openOrderEditor(orderId) {
-  const order = state.orders.find((item) => item.id === orderId);
-  if (!order) return;
+async function openOrderEditor(orderId) {
+  let order = state.orders.find((item) => item.id === orderId);
+  if (!order) {
+    await loadOrders();
+    order = state.orders.find((item) => item.id === orderId);
+  }
+  if (!order) {
+    window.alert("Detail pesanan belum berhasil dimuat. Muat ulang daftar pesanan lalu coba kembali.");
+    return;
+  }
   state.editingOrderId = order.id;
   $("#orderModalTitle").textContent = `Pesanan ${order.order_number}`;
   $("#orderCustomerSummary").innerHTML = `<div><strong>${escapeHtml(order.customer_name)}</strong><span>${escapeHtml(order.customer_phone)}${order.customer_email ? ` · ${escapeHtml(order.customer_email)}` : ""}</span></div>
@@ -566,15 +573,17 @@ function renderProducts() {
     `${product.name} ${product.sku || ""}`.toLocaleLowerCase("id-ID").includes(query));
   $("#productsBody").innerHTML = products.map((product) => {
     const known = product.inventory.filter((item) => item.stock_quantity !== null);
-    const totalStock = known.reduce((sum, item) => sum + Number(item.stock_quantity), 0);
-    const stockText = known.length ? `${totalStock} pcs` : "Belum diisi";
+    const totalStock = known.reduce((sum, item) => sum + Math.max(0, Number(item.stock_quantity) - Number(item.reserved_quantity || 0)), 0);
+    const totalReserved = known.reduce((sum, item) => sum + Number(item.reserved_quantity || 0), 0);
+    const stockText = known.length ? `${totalStock} pcs tersedia${totalReserved ? ` · ${totalReserved} dicadangkan` : ""}` : "Belum diisi";
     const stockByVariant = product.variants.length && product.sizes.length
       ? `<div class="product-stock-list">${product.variants.map((variant) => {
         const quantities = product.sizes.map((size) => {
           const row = product.inventory.find((item) => item.variant_id === variant.id && item.size_id === size.id);
-          const value = row?.stock_quantity == null ? "—" : row.stock_quantity;
-          const stateClass = row?.stock_quantity === 0 ? "is-zero" : row?.stock_quantity == null ? "is-unknown" : "";
-          return `<span class="product-stock-value ${stateClass}">${escapeHtml(size.size_name)}: ${escapeHtml(value)}</span>`;
+          const available = row?.stock_quantity == null ? null : Math.max(0, Number(row.stock_quantity) - Number(row.reserved_quantity || 0));
+          const held = Number(row?.reserved_quantity || 0);
+          const stateClass = available === 0 ? "is-zero" : available == null ? "is-unknown" : "";
+          return `<span class="product-stock-value ${stateClass}">${escapeHtml(size.size_name)}: ${available == null ? "—" : `${available}${held ? ` (${held} dicadangkan)` : ""}`}</span>`;
         }).join("");
         return `<div class="product-stock-color"><strong>${escapeHtml(variant.color_name)}</strong><span>${quantities}</span></div>`;
       }).join("")}</div>`
@@ -613,7 +622,7 @@ async function loadProducts() {
       supabaseClient.from("product_variants").select("id, product_id, color_name, sort_order").in("product_id", ids).order("sort_order"),
       supabaseClient.from("product_sizes").select("id, product_id, size_name, bust_cm, garment_length_cm, sleeve_length_cm, sort_order").in("product_id", ids).order("sort_order"),
       supabaseClient.from("product_images").select("id, product_id, variant_id, image_path, alt_text, sort_order").in("product_id", ids).order("sort_order"),
-      supabaseClient.from("inventory").select("product_id, variant_id, size_id, stock_quantity").in("product_id", ids),
+      supabaseClient.from("inventory").select("product_id, variant_id, size_id, stock_quantity, reserved_quantity").in("product_id", ids),
     ]);
     const failed = results.find((result) => result.error);
     if (failed) {
@@ -938,7 +947,10 @@ async function saveStockOnly() {
       const { error } = await supabaseClient.from("inventory").upsert(rows, { onConflict: "variant_id,size_id" });
       if (error) throw error;
     }
-    product.inventory = rows;
+    product.inventory = rows.map((row) => ({
+      ...row,
+      reserved_quantity: product.inventory.find((existing) => existing.variant_id === row.variant_id && existing.size_id === row.size_id)?.reserved_quantity || 0,
+    }));
     renderProducts();
     setStatus("#productFormStatus", "Stok berhasil diperbarui.");
     setStatus("#productsStatus", `Stok ${product.name} berhasil diperbarui.`);
