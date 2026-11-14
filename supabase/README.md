@@ -10,6 +10,7 @@ Folder ini berisi migrasi Supabase untuk website Urbann Attier. Project yang saa
 4. Checkout website saat ini memakai Midtrans Snap. Fungsi `create-midtrans-payment` memeriksa ulang tarif RajaOngkir, harga, dan stok di server sebelum menyiapkan pembayaran. Fungsi `midtrans-notification` memverifikasi tanda tangan notifikasi Midtrans lalu memperbarui status pesanan dan stok. Pesanan diproses setelah notifikasi pembayaran valid; stok yang gagal/kedaluwarsa dilepas kembali.
 5. Dashboard admin menyediakan daftar pesanan, perubahan ongkir/resi, dan tahap pemrosesan. Pesanan Midtrans yang sudah dibayar memperbarui status otomatis. Pesanan manual/transfer dari alur lama tetap dapat dikelola dari dashboard; tandai lunas hanya setelah transfer benar-benar diverifikasi.
 6. Untuk akun pelanggan dan diskon, jalankan `202611140001_customer_accounts.sql` lalu `202611140002_member_discount.sql` setelah migrasi checkout dan pembayaran di atas. Diskon 5% berlaku pada bagian harga ecer untuk maksimal lima pesanan yang berhasil dibayar. Pesanan menunggu pembayaran memegang kuota sementara; pembatalan, penolakan, atau refund melepaskannya. Nilai potongan dihitung ulang di server dan disimpan bersama sisa kuota pada data pesanan agar dapat dicetak di invoice.
+7. Jalankan `202611140003_admin_order_realtime.sql` agar perubahan status pesanan masuk ke dashboard admin secara langsung. Dashboard menampilkan pemberitahuan untuk pesanan baru dan perubahan status pembayaran/tahap pesanan selama admin sedang membuka dashboard.
 
 ## Menyiapkan login pelanggan
 

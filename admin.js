@@ -12,6 +12,7 @@ const state = {
   ordersFilter: "all",
   orderChannel: null,
   orderRefreshTimer: null,
+  orderRefreshPending: false,
   editingOrderId: null,
   editingProductId: null,
   variants: [],
@@ -203,14 +204,37 @@ function subscribeToOrderChanges() {
   state.orderChannel = supabaseClient.channel("urbann-admin-orders")
     .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, scheduleOrderRefresh)
     .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, scheduleOrderRefresh)
-    .subscribe();
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        setStatus("#dashboardStatus", "Pembaruan status pesanan otomatis aktif.");
+      } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+        setStatus("#dashboardStatus", "Pembaruan otomatis terputus. Gunakan tombol Muat ulang untuk memeriksa status terbaru.", true);
+      }
+    });
 }
 
-function scheduleOrderRefresh() {
+function scheduleOrderRefresh(payload = {}) {
+  if (payload.table === "orders") {
+    const updatedOrder = payload.new || {};
+    const previousOrder = state.orders.find((order) => order.id === updatedOrder.id);
+    const orderNumber = updatedOrder.order_number || previousOrder?.order_number || "Pesanan";
+
+    if (payload.eventType === "INSERT") {
+      setStatus("#dashboardStatus", `Pesanan baru ${orderNumber} diterima. Daftar pesanan diperbarui otomatis.`);
+    } else if (payload.eventType === "UPDATE" && previousOrder) {
+      if (previousOrder.payment_status !== updatedOrder.payment_status) {
+        setStatus("#dashboardStatus", `Pembayaran ${orderNumber}: ${paymentStatusLabel(updatedOrder.payment_status, updatedOrder.payment_method)}. Dashboard diperbarui otomatis.`);
+      } else if (previousOrder.status !== updatedOrder.status) {
+        setStatus("#dashboardStatus", `Tahap ${orderNumber}: ${orderStatusLabel(updatedOrder.status)}. Dashboard diperbarui otomatis.`);
+      }
+    }
+  }
+
   window.clearTimeout(state.orderRefreshTimer);
   state.orderRefreshTimer = window.setTimeout(() => {
     const refreshes = [loadOverview()];
     if ($("#orderModal").hidden) refreshes.push(loadOrders());
+    else state.orderRefreshPending = true;
     Promise.all(refreshes).catch((error) => {
       setStatus("#dashboardStatus", `Aktivitas pesanan gagal diperbarui: ${error.message}`, true);
     });
@@ -221,8 +245,8 @@ async function loadOverview() {
   const [products, orders, pending, recent] = await Promise.all([
     supabaseClient.from("products").select("id", { count: "exact", head: true }),
     supabaseClient.from("orders").select("id", { count: "exact", head: true }),
-    supabaseClient.from("orders").select("id", { count: "exact", head: true }).or("status.eq.needs_confirmation,payment_status.eq.waiting_confirmation").neq("status", "cancelled"),
-    supabaseClient.from("orders").select("id, order_number, customer_name, total_amount, status, payment_status, created_at").order("created_at", { ascending: false }).limit(6),
+    supabaseClient.from("orders").select("id", { count: "exact", head: true }).or("status.eq.needs_confirmation,and(payment_status.eq.waiting_confirmation,payment_method.neq.midtrans_snap)").neq("status", "cancelled"),
+    supabaseClient.from("orders").select("id, order_number, customer_name, total_amount, status, payment_status, payment_method, created_at").order("created_at", { ascending: false }).limit(6),
   ]);
   const failed = [products, orders, pending, recent].find((result) => result.error);
   if (failed) throw failed.error;
@@ -232,7 +256,7 @@ async function loadOverview() {
   $("#pendingCount").textContent = pending.count ?? 0;
   $("#recentOrdersBody").innerHTML = recent.data.map((order) => `<tr>
     <td>${escapeHtml(order.order_number)}</td><td>${escapeHtml(order.customer_name)}</td>
-    <td>${formatRupiah(order.total_amount)}</td><td><span class="status-pill ${orderStatusClass(order.status)}">${escapeHtml(orderStatusLabel(order.status))}</span><small class="table-substatus">${escapeHtml(paymentStatusLabel(order.payment_status))}</small></td><td>${formatDate(order.created_at)}</td>
+    <td>${formatRupiah(order.total_amount)}</td><td><span class="status-pill ${orderStatusClass(order.status)}">${escapeHtml(orderStatusLabel(order.status))}</span><small class="table-substatus">${escapeHtml(paymentStatusLabel(order.payment_status, order.payment_method))}</small></td><td>${formatDate(order.created_at)}</td>
     <td><button class="button button-small" type="button" data-open-order="${escapeHtml(order.id)}">Lihat / kelola</button></td>
   </tr>`).join("");
   $("#ordersEmpty").hidden = recent.data.length > 0;
@@ -249,7 +273,19 @@ const PAYMENT_STATUS_LABELS = {
 };
 
 function orderStatusLabel(status) { return ORDER_STATUS_LABELS[status] || status || "—"; }
-function paymentStatusLabel(status) { return PAYMENT_STATUS_LABELS[status] || status || "—"; }
+function paymentStatusLabel(status, paymentMethod = null) {
+  if (paymentMethod === "midtrans_snap") {
+    const midtransLabels = {
+      unpaid: "Belum dibayar",
+      waiting_confirmation: "Menunggu pembayaran Midtrans",
+      paid: "Lunas",
+      rejected: "Gagal / kedaluwarsa",
+      refunded: "Dana dikembalikan",
+    };
+    return midtransLabels[status] || PAYMENT_STATUS_LABELS[status] || status || "—";
+  }
+  return PAYMENT_STATUS_LABELS[status] || status || "—";
+}
 function orderStatusClass(status) {
   if (["processing", "shipped", "completed"].includes(status)) return "is-on";
   if (status === "cancelled") return "is-off";
@@ -287,15 +323,15 @@ function renderOrders() {
   const orders = state.orders.filter((order) => {
     const matchesQuery = `${order.order_number} ${order.customer_name} ${order.customer_phone}`.toLocaleLowerCase("id-ID").includes(query);
     const matchesFilter = state.ordersFilter === "all"
-      || (state.ordersFilter === "pending" && order.status !== "cancelled" && (order.status === "needs_confirmation" || order.payment_status === "waiting_confirmation"))
+      || (state.ordersFilter === "pending" && order.status !== "cancelled" && (order.status === "needs_confirmation" || (order.payment_status === "waiting_confirmation" && order.payment_method !== "midtrans_snap")))
       || order.status === state.ordersFilter;
     return matchesQuery && matchesFilter;
   });
   $("#ordersBody").innerHTML = orders.map((order) => `<tr>
     <td><strong>${escapeHtml(order.order_number)}</strong><small>${formatDate(order.created_at)}</small></td>
     <td><strong>${escapeHtml(order.customer_name)}</strong><small>${escapeHtml(order.customer_phone)}</small></td>
-    <td><strong>${formatRupiah(order.total_amount)}</strong><small>${escapeHtml(paymentStatusLabel(order.payment_status))}</small></td>
-    <td><span class="status-pill ${order.payment_status === "paid" ? "is-on" : order.payment_status === "rejected" ? "is-off" : "is-pending"}">${escapeHtml(paymentStatusLabel(order.payment_status))}</span></td>
+    <td><strong>${formatRupiah(order.total_amount)}</strong><small>${escapeHtml(paymentStatusLabel(order.payment_status, order.payment_method))}</small></td>
+    <td><span class="status-pill ${order.payment_status === "paid" ? "is-on" : order.payment_status === "rejected" || order.payment_status === "refunded" ? "is-off" : "is-pending"}">${escapeHtml(paymentStatusLabel(order.payment_status, order.payment_method))}</span></td>
     <td><span class="status-pill ${orderStatusClass(order.status)}">${escapeHtml(orderStatusLabel(order.status))}</span></td>
     <td><button class="button button-small" type="button" data-open-order="${escapeHtml(order.id)}">Lihat / kelola</button></td>
   </tr>`).join("");
@@ -358,7 +394,7 @@ function printOrderInvoice() {
     .filter(Boolean).map(escapeHtml).join(", ");
   const itemRows = order.items.length ? order.items.map((item) => `
     <tr>
-      <td><strong>${escapeHtml(item.product_name)}</strong><small>${escapeHtml(item.color_name)} / ${escapeHtml(item.size_name)}${item.pricing_tier ? ` · ${escapeHtml(item.pricing_tier)}` : ""}</small></td>
+      <td><strong>${escapeHtml(item.product_name)}</strong><small>${escapeHtml(item.color_name)} / ${escapeHtml(item.size_name)}${item.pricing_tier ? ` · ${escapeHtml(item.pricing_tier)}` : ""}</small><small>Harga awal: ${formatRupiah(item.unit_price)} × ${Number(item.quantity)} = ${formatRupiah(item.line_total)}</small></td>
       <td class="invoice-qty">${Number(item.quantity)}×</td>
       <td class="invoice-amount">${formatRupiah(item.line_total)}</td>
     </tr>`).join("") : '<tr><td colspan="3">Rincian produk tidak tersedia.</td></tr>';
@@ -369,7 +405,7 @@ function printOrderInvoice() {
     ? `<div><span>Diskon member${Number(order.discount_percent) ? ` ${Number(order.discount_percent)}% dari harga ecer ${formatRupiah(order.discount_base_amount)}` : ""}</span><strong>${Number(order.discount_amount) > 0 ? `−${formatRupiah(order.discount_amount)}` : "Tidak berlaku"}</strong></div>`
     : "";
   const remainingTokensNote = order.customer_id
-    ? `<div><span>Sisa kuota diskon saat pesanan dibuat</span><strong>${order.discount_tokens_remaining == null ? "—" : `${Number(order.discount_tokens_remaining)} dari 5 pesanan`}</strong></div>`
+    ? `<div><span>Sisa token diskon setelah pesanan</span><strong>${order.discount_tokens_remaining == null ? "—" : `${Number(order.discount_tokens_remaining)} dari 5 pesanan`}</strong></div>`
     : "";
 
   $("#invoicePrintArea").innerHTML = `
@@ -380,7 +416,7 @@ function printOrderInvoice() {
     <section class="invoice-customer"><h2>Informasi pelanggan</h2><strong>${escapeHtml(order.customer_name)}</strong><span>${escapeHtml(order.customer_phone)}${order.customer_email ? ` · ${escapeHtml(order.customer_email)}` : ""}</span><span>${address || "Alamat belum tersedia"}</span>${order.customer_note ? `<small>Catatan: ${escapeHtml(order.customer_note)}</small>` : ""}</section>
     <table class="invoice-items"><thead><tr><th>Produk</th><th>Qty</th><th>Jumlah</th></tr></thead><tbody>${itemRows}</tbody></table>
     <section class="invoice-totals"><div><span>Subtotal produk</span><strong>${formatRupiah(order.subtotal_amount)}</strong></div>${memberDiscountRow}${remainingTokensNote}<div><span>Biaya pengemasan</span><strong>${formatRupiah(order.packaging_fee)}</strong></div><div><span>Ongkos kirim</span><strong>${shipping}</strong></div><div class="invoice-grand-total"><span>${totalLabel}</span><strong>${formatRupiah(order.total_amount)}</strong></div></section>
-    <section class="invoice-status"><div><span>Status pembayaran</span><strong>${escapeHtml(paymentStatusLabel(order.payment_status))}</strong></div><div><span>Tahap pesanan</span><strong>${escapeHtml(orderStatusLabel(order.status))}</strong></div><div><span>Ekspedisi / layanan</span><strong>${carrier}</strong></div><div><span>Nomor resi</span><strong>${escapeHtml(order.tracking_number || "Belum tersedia")}</strong></div></section>
+    <section class="invoice-status"><div><span>Status pembayaran</span><strong>${escapeHtml(paymentStatusLabel(order.payment_status, order.payment_method))}</strong></div><div><span>Tahap pesanan</span><strong>${escapeHtml(orderStatusLabel(order.status))}</strong></div><div><span>Ekspedisi / layanan</span><strong>${carrier}</strong></div><div><span>Nomor resi</span><strong>${escapeHtml(order.tracking_number || "Belum tersedia")}</strong></div></section>
     <footer class="invoice-footer"><strong>Terima kasih telah berbelanja di Urbann Attier.</strong><span>Invoice ini merupakan bukti rincian pesanan.</span></footer>`;
 
   const printArea = $("#invoicePrintArea");
@@ -397,6 +433,12 @@ function closeOrderModal() {
   if (state.busy) return;
   $("#orderModal").hidden = true;
   state.editingOrderId = null;
+  if (state.orderRefreshPending) {
+    state.orderRefreshPending = false;
+    Promise.all([loadOverview(), loadOrders()]).catch((error) => {
+      setStatus("#dashboardStatus", `Pesanan gagal diperbarui: ${error.message}`, true);
+    });
+  }
 }
 
 function normalizeWhatsAppNumber(value) {
@@ -420,7 +462,7 @@ function buildOrderNotification(order, nextStatus, nextPaymentStatus, nextTotal,
     `Nomor pesanan: ${order.order_number}`,
   ];
   if (statusChanged) lines.push(`Tahap pesanan: ${orderStatusLabel(nextStatus)}.`);
-  if (paymentChanged) lines.push(`Status pembayaran: ${paymentStatusLabel(nextPaymentStatus)}.`);
+  if (paymentChanged) lines.push(`Status pembayaran: ${paymentStatusLabel(nextPaymentStatus, order.payment_method)}.`);
 
   if (nextPaymentStatus === "waiting_confirmation") {
     lines.push("Pembayaran yang Anda laporkan sedang kami periksa.");

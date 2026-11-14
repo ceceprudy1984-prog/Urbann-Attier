@@ -276,6 +276,25 @@ function getCheckoutToken(fingerprint) {
   return { key: checkoutTokenStorageKey, token };
 }
 
+async function getVerifiedCheckoutSession(client) {
+  const { data, error } = await client.auth.getSession();
+  if (error) throw new Error("Status akun belum dapat diperiksa. Muat ulang halaman lalu coba lagi.");
+  let session = data?.session || null;
+  if (!session) return null;
+
+  const { error: userError } = await client.auth.getUser(session.access_token);
+  if (!userError) return session;
+
+  const { data: refreshed, error: refreshError } = await client.auth.refreshSession();
+  if (refreshError || !refreshed?.session) {
+    throw new Error("Sesi akun sudah kedaluwarsa. Masuk kembali, lalu coba bayar lagi.");
+  }
+  session = refreshed.session;
+  const { error: refreshedUserError } = await client.auth.getUser(session.access_token);
+  if (refreshedUserError) throw new Error("Sesi akun belum valid. Keluar, masuk kembali, lalu coba bayar lagi.");
+  return session;
+}
+
 async function callShippingFunction(payload) {
   const client = window.urbannSupabaseClient;
   if (!client) throw new Error("Koneksi Supabase belum siap. Muat ulang halaman lalu coba lagi.");
@@ -499,12 +518,12 @@ recipientForm?.addEventListener("submit", async (event) => {
     checkoutActionStatus.textContent = "Koneksi Supabase belum siap. Muat ulang halaman lalu coba lagi.";
     return;
   }
-  const { data: sessionResult, error: sessionError } = await client.auth.getSession();
-  if (sessionError) {
-    checkoutActionStatus.textContent = "Status akun belum dapat diperiksa. Muat ulang halaman lalu coba lagi.";
+  try {
+    checkoutMemberSession = await getVerifiedCheckoutSession(client);
+  } catch (error) {
+    checkoutActionStatus.textContent = error.message;
     return;
   }
-  checkoutMemberSession = sessionResult?.session || null;
   const fingerprint = JSON.stringify({ customer, items: cartSnapshot, memberId: checkoutMemberSession?.user?.id || null });
   const hasPendingCheckout = sessionStorage.getItem(checkoutTokenStorageKey)
     && sessionStorage.getItem(checkoutFingerprintStorageKey) === fingerprint;

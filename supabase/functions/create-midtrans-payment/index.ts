@@ -116,34 +116,37 @@ async function requestSnapToken(order: Record<string, unknown>, paymentId: strin
 
   const { data: items, error: itemsError } = await client
     .from("order_items")
-    .select("product_name,color_name,size_name,quantity,line_total,purchase_mode,pricing_tier")
+    .select("product_name,color_name,size_name,quantity,unit_price,line_total,purchase_mode,pricing_tier")
     .eq("order_id", String(order.order_id));
   if (itemsError) throw itemsError;
 
   const discountAmount = Number(order.discount_amount ?? 0);
   const discountBaseAmount = Number(order.discount_base_amount ?? 0);
-  const eligibleItems = (items ?? []).filter((item) => item.purchase_mode === "ecer" && item.pricing_tier === "ecer");
-  let discountLeft = discountAmount;
   const itemDetails = (items ?? []).map((item, index) => {
     const lineTotal = Number(item.line_total);
-    let lineDiscount = 0;
-    if (item.purchase_mode === "ecer" && item.pricing_tier === "ecer" && discountLeft > 0) {
-      const isLastEligible = eligibleItems.at(-1) === item;
-      lineDiscount = isLastEligible
-        ? discountLeft
-        : Math.min(discountLeft, Math.round(discountAmount * lineTotal / discountBaseAmount));
-      discountLeft -= lineDiscount;
+    const unitPrice = Number(item.unit_price);
+    const quantity = Number(item.quantity);
+    if (!Number.isSafeInteger(lineTotal) || !Number.isSafeInteger(unitPrice)
+      || !Number.isSafeInteger(quantity) || quantity < 1 || unitPrice * quantity !== lineTotal) {
+      throw new Error("Rincian harga produk pesanan tidak valid.");
     }
-    const netLineTotal = lineTotal - lineDiscount;
-    if (!Number.isSafeInteger(netLineTotal) || netLineTotal < 0) throw new Error("Rincian diskon pesanan tidak valid.");
-    const itemName = `${item.product_name} (${item.color_name}, ${item.size_name}) × ${Number(item.quantity)}${lineDiscount ? " · Diskon member 5%" : ""}`;
+    const itemName = `${item.product_name} (${item.color_name}, ${item.size_name})`.slice(0, 50);
     return {
       id: `${String(item.product_name).slice(0, 24)}-${index + 1}`.replace(/[^a-zA-Z0-9_-]/g, ""),
-      price: netLineTotal,
-      quantity: 1,
-      name: itemName.slice(0, 50),
+      price: unitPrice,
+      quantity,
+      name: itemName,
     };
   });
+  if (discountAmount > 0) {
+    const remainingTokens = Number(order.discount_tokens_remaining ?? 0);
+    itemDetails.push({
+      id: "member-discount",
+      price: -discountAmount,
+      quantity: 1,
+      name: `Diskon 5% dari Rp${new Intl.NumberFormat("id-ID").format(discountBaseAmount)} · sisa ${remainingTokens}/5`.slice(0, 50),
+    });
+  }
   const packagingFee = Number(order.packaging_fee ?? 0);
   const shippingFee = Number(order.shipping_fee ?? 0);
   if (packagingFee > 0) itemDetails.push({ id: "packaging", price: packagingFee, quantity: 1, name: "Biaya pengemasan" });
@@ -153,7 +156,7 @@ async function requestSnapToken(order: Record<string, unknown>, paymentId: strin
   const grossAmount = Number(order.amount);
   if (!Number.isSafeInteger(grossAmount) || grossAmount < 1) throw new Error("Total pembayaran pesanan tidak valid.");
   const itemDetailsTotal = itemDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  if (discountLeft !== 0 || (discountAmount > 0 && discountBaseAmount <= 0) || itemDetailsTotal !== grossAmount) {
+  if ((discountAmount > 0 && discountBaseAmount <= 0) || itemDetailsTotal !== grossAmount) {
     throw new Error("Rincian pembayaran dan potongan diskon tidak sesuai dengan total pesanan. Hubungi admin.");
   }
 
@@ -285,6 +288,7 @@ Deno.serve(async (request) => {
       shipping_provider: order.shipping_provider,
       discount_amount: Number(order.discount_amount ?? 0),
       discount_base_amount: Number(order.discount_base_amount ?? 0),
+      discount_tokens_remaining: order.discount_tokens_remaining == null ? null : Number(order.discount_tokens_remaining),
       customer: {
         name: order.customer_name,
         phone: order.customer_phone,
