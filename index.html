@@ -14,6 +14,25 @@
 </head>
 
 <body>
+  <dialog class="member-welcome" id="memberWelcome" aria-labelledby="memberWelcomeTitle" aria-describedby="memberWelcomeDescription">
+    <div class="member-welcome-card">
+      <button class="member-welcome-close" type="button" data-welcome-continue aria-label="Tutup pemberitahuan">&times;</button>
+      <img class="member-welcome-logo" src="assets/urban attier tf.png" alt="Logo Urbann Attier" />
+      <p class="section-label">MEMBER URBANN ATTIER</p>
+      <h2 id="memberWelcomeTitle">Kenali benefit menjadi member</h2>
+      <p id="memberWelcomeDescription" class="member-welcome-intro">Buat akun untuk bergabung dengan Urbann Attier dan mendapatkan kabar seputar koleksi serta program khusus member.</p>
+      <ul class="member-benefits">
+        <li><span aria-hidden="true">✦</span><span><strong>Diskon 5% untuk lima pesanan pertama</strong><br />Berlaku untuk lima pesanan harga ecer yang berhasil dibayar. Setelah itu, harga normal berlaku.</span></li>
+        <li><span aria-hidden="true">✦</span><span><strong>Kabar produk dan promo</strong><br />Anda dapat memilih secara opsional untuk menerima informasi melalui email.</span></li>
+      </ul>
+      <div class="member-welcome-actions">
+        <a class="btn btn-primary" id="welcomeRegisterButton" href="akun.html?mode=register">Daftar sekarang</a>
+        <button class="btn btn-secondary" type="button" data-welcome-continue>Lanjut belanja</button>
+      </div>
+      <p class="member-welcome-note">Belanja tanpa akun tetap tersedia.</p>
+    </div>
+  </dialog>
+
   <!-- NAVBAR -->
   <nav class="navbar" aria-label="Navigasi utama">
     <a class="nav-brand" href="#beranda" aria-label="Urbann Attier, halaman utama">
@@ -29,16 +48,24 @@
         <li><a href="#produk">Kategori</a></li>
         <li><a href="#tentang-kami">Tentang Kami</a></li>
         <li><a href="#kontak">Kontak</a></li>
+        <li><a href="akun.html">Akun</a></li>
       </ul>
       <form class="nav-search" id="productSearch" role="search">
         <label class="sr-only" for="productSearchInput">Cari produk</label>
         <input id="productSearchInput" name="q" type="search" placeholder="Cari gamis..." autocomplete="off" />
         <button type="submit" aria-label="Cari produk">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10.8" cy="10.8" r="6.8"></circle>
+            <path d="m16 16 5 5"></path>
+          </svg>
         </button>
       </form>
       <a class="nav-cart" href="keranjang.html" aria-label="Buka keranjang, 0 barang">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 1.9-1.4L21 8H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 1.9-1.4L21 8H6"></path>
+          <circle cx="10" cy="20" r="1"></circle>
+          <circle cx="18" cy="20" r="1"></circle>
+        </svg>
         <span>Keranjang</span><span class="nav-cart-count" data-cart-count>0</span>
       </a>
     </div>
@@ -54,9 +81,9 @@
   <section class="hero" id="beranda">
     <div class="hero-content">
       <span class="hero-label">Since 2022</span>
-      <h1 class="hero-title">Gamis Elegan untuk Setiap Momen</h1>
+      <h1 class="hero-title">Elegan untuk Setiap Momen</h1>
       <p class="hero-sub">
-        Temukan koleksi gamis wanita Urbann Attier dengan desain anggun dan
+        Temukan koleksi kami dengan desain anggun dan elegan, serta
         pilihan warna yang menawan untuk menemani berbagai momen Anda.
       </p>
 
@@ -71,14 +98,16 @@
   <section class="section" id="produk">
     <div class="section-header">
       <span class="section-label">Koleksi kami</span>
-      <h2>Gamis Wanita Pilihan</h2>
+      <h2>Gamis Mewah & Elegan</h2>
       <p>
-        Jelajahi koleksi gamis wanita Urbann Attier. Periksa deskripsi dan
+        Teliti sebelum membeli. Periksa deskripsi dan
         detail ukuran sebelum memesan agar pilihan Anda sesuai.
       </p>
     </div>
 
-    <div class="produk-grid" id="produkGrid"><p class="produk-empty">Memuat katalog produk…</p></div>
+    <div class="produk-grid" id="produkGrid">
+      <p class="produk-empty">Memuat katalog produk…</p>
+    </div>
   </section>
 
   <!-- KEUNGGULAN -->
@@ -110,6 +139,32 @@
           Lihat detail produk dan hubungi kami untuk informasi pemesanan.
         </p>
       </article>
+
+      <article class="keunggulan-card">
+        <div class="keunggulan-icon" aria-hidden="true">⨄</div>
+        <h3>3 pilihan harga</h3>
+        <p>
+          harga eceran, serian, dan grosiran untuk memenuhi kebutuhan Anda.
+        </p>
+      </article>
+
+      <article class="keunggulan-card">
+        <div class="keunggulan-icon" aria-hidden="true">⨊</div>
+        <h3>Custom Produk</h3>
+        <p>
+          Punya ide model yang ingin Anda wujudkan?ceritakan kebutuhan Anda, dan kami akan membantu mewujudkannya.
+        </p>
+      </article>
+
+      <article class="keunggulan-card">
+        <div class="keunggulan-icon" aria-hidden="true">£</div>
+        <h3>Brand Terpercaya</h3>
+        <p>
+          Urbann Attier telah dipercaya pelanggan sejak 2022 untuk menyediakan gamis berkualitas.
+          Terbukti dengan ulasan positif dari pelanggan yang puas dengan produk dan layanan kami.
+          Dan produk kami telah terjual 10rb pcs lebih di marketplace.
+        </p>
+      </article>
     </div>
   </section>
 
@@ -117,8 +172,8 @@
   <section class="section custom-order-section" id="pesanan-custom" aria-labelledby="customOrderTitle">
     <div class="custom-order-layout">
       <figure class="custom-order-visual">
-        <img src="assets/urban1.png" alt="Tiga pilihan gamis Urbann Attier sebagai inspirasi pesanan custom" loading="lazy" />
-        <figcaption>Koleksi Urbann Attier sebagai inspirasi gaya Anda</figcaption>
+        <img src="assets/Urban Attier.jpg" alt="Tiga pilihan gamis Urbann Attier sebagai inspirasi pesanan custom"
+          loading="lazy" />
       </figure>
 
       <div class="custom-order-content">
@@ -133,24 +188,35 @@
         <ol class="custom-order-steps" aria-label="Alur pesanan custom">
           <li>
             <span class="custom-step-number">01</span>
-            <div><h3>Ceritakan kebutuhan</h3><p>Kirim gambaran model, referensi foto, warna, ukuran, jumlah, dan target waktu.</p></div>
+            <div>
+              <h3>Ceritakan kebutuhan</h3>
+              <p>Kirim gambaran model, referensi foto, warna, ukuran, jumlah, dan target waktu.</p>
+            </div>
           </li>
           <li>
             <span class="custom-step-number">02</span>
-            <div><h3>Periksa kemungkinan dan biaya</h3><p>Kami meninjau bahan, detail pesanan, kapasitas produksi, harga, dan estimasi pengerjaan.</p></div>
+            <div>
+              <h3>Periksa kemungkinan dan biaya</h3>
+              <p>Kami meninjau bahan, detail pesanan, kapasitas produksi, harga, dan estimasi pengerjaan.</p>
+            </div>
           </li>
           <li>
             <span class="custom-step-number">03</span>
-            <div><h3>Setujui sebelum produksi</h3><p>Produksi dimulai setelah spesifikasi, harga, jadwal, dan ketentuan disepakati bersama.</p></div>
+            <div>
+              <h3>Setujui sebelum produksi</h3>
+              <p>Produksi dimulai setelah spesifikasi, harga, jadwal, dan ketentuan disepakati bersama.</p>
+            </div>
           </li>
         </ol>
 
         <aside class="custom-order-terms">
           <strong>Ketentuan awal</strong>
-          <p>Setiap permintaan perlu dikonfirmasi terlebih dahulu. Minimum jumlah pesanan, uang muka, dan waktu produksi akan diinformasikan setelah kebutuhan Anda ditinjau.</p>
+          <p>Setiap permintaan perlu dikonfirmasi terlebih dahulu. Minimum jumlah pesanan, uang muka, dan waktu produksi
+            akan diinformasikan setelah kebutuhan Anda ditinjau.</p>
         </aside>
 
-        <a class="btn btn-primary custom-order-cta" href="#kontak">Konsultasikan pesanan</a>
+        <a class="btn btn-primary custom-order-cta" href="https://wa.me/6282318500057" target="_blank"
+          rel="noopener noreferrer">Konsultasi gratis</a>
       </div>
     </div>
   </section>
@@ -159,9 +225,9 @@
   <section class="section section-alt" id="testimoni">
     <div class="section-header">
       <span class="section-label">Kata pelanggan</span>
-      <h2>Pengalaman Pelanggan Urbann Attier</h2>
+      <h2>Pengalaman Pelanggan Kami</h2>
       <p>
-        Lihat pengalaman pelanggan kami berbelanja gamis di Urbann Attier.
+        Lihat pengalaman pelanggan kami berbelanja Produk di Urbann Attier.
       </p>
     </div>
 
@@ -212,7 +278,8 @@
     <div class="section-header">
       <span class="section-label">Tentang Urbann Attier</span>
       <h2>Gamis untuk Berbagai Momen</h2>
-      <p>Urbann Attier menghadirkan pilihan gamis wanita dengan beragam model dan warna. Sejak 2022, kami membantu Anda menemukan koleksi yang sesuai dengan gaya dan kebutuhan.</p>
+      <p>Urbann Attier menghadirkan pilihan gamis wanita dengan beragam model dan warna. Sejak 2022, kami membantu Anda
+        menemukan koleksi yang sesuai dengan gaya dan kebutuhan.</p>
     </div>
   </section>
 
@@ -228,7 +295,7 @@
     </div>
 
     <div class="kontak-grid">
-      <a href="https://wa.me/628xxxxxxxxxx" class="kontak-card" target="_blank" rel="noopener noreferrer">
+      <a href="https://wa.me/6282318500057" class="kontak-card" target="_blank" rel="noopener noreferrer">
         <div class="kontak-icon" aria-hidden="true">WA</div>
         <div>
           <h3>WhatsApp</h3>
@@ -258,6 +325,7 @@
   <script src="supabase-config.js"></script>
   <script src="main.js"></script>
   <script src="cart-store.js"></script>
+  <script src="welcome.js"></script>
 </body>
 
 </html>

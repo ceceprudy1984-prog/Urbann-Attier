@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f8f5f1" />
+    <title>Akun Pelanggan | Urbann Attier</title>
+    <meta name="description" content="Daftar atau masuk ke akun pelanggan Urbann Attier." />
+    <link rel="icon" type="image/x-icon" href="assets/Urban Attier.jpg" />
+    <link rel="stylesheet" href="akun.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="akun.js" defer></script>
+  </head>
+  <body class="account-body">
+    <main class="account-shell">
+      <a class="account-back" href="index.html">&larr; Kembali ke Urbann Attier</a>
+      <section class="account-card" aria-labelledby="accountTitle">
+        <a class="account-brand" href="index.html">
+          <img src="assets/urban attier tf.png" alt="" />
+          <span>Urbann Attier</span>
+        </a>
+
+        <div id="authPanel">
+          <p class="account-eyebrow">AKUN PELANGGAN</p>
+          <h1 id="accountTitle">Masuk ke akun Anda</h1>
+          <p class="account-intro" id="accountIntro">Masuk untuk mengelola akun pelanggan Urbann Attier.</p>
+
+          <form id="loginForm" class="account-form">
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" name="email" type="email" autocomplete="email" required />
+            <label for="loginPassword">Kata sandi</label>
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" required />
+            <button class="account-submit" id="loginButton" type="submit">Masuk</button>
+            <button class="account-text-button" id="forgotPasswordButton" type="button">Lupa kata sandi?</button>
+          </form>
+
+          <form id="registerForm" class="account-form" hidden>
+            <label for="registerName">Nama lengkap</label>
+            <input id="registerName" name="name" type="text" autocomplete="name" maxlength="160" required />
+            <label for="registerPhone">Nomor WhatsApp</label>
+            <input id="registerPhone" name="phone" type="tel" autocomplete="tel" maxlength="32" required />
+            <label for="registerEmail">Email</label>
+            <input id="registerEmail" name="email" type="email" autocomplete="email" required />
+            <label for="registerPassword">Kata sandi</label>
+            <input id="registerPassword" name="password" type="password" autocomplete="new-password" minlength="8" required />
+            <small class="account-hint">Gunakan minimal 8 karakter.</small>
+            <label for="registerPasswordConfirm">Ulangi kata sandi</label>
+            <input id="registerPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="8" required />
+            <p class="account-terms-note">Dengan membuat akun, Anda menyetujui <a href="kebijakan-privasi.html" target="_blank" rel="noopener noreferrer">ketentuan akun dan kebijakan privasi</a>.</p>
+            <label class="account-consent" for="emailMarketingConsent">
+              <input id="emailMarketingConsent" name="emailMarketingConsent" type="checkbox" />
+              <span>(Opsional) Saya bersedia menerima informasi produk baru dan promo Urbann Attier melalui email. Saya dapat berhenti kapan saja.</span>
+            </label>
+            <button class="account-submit" id="registerButton" type="submit">Buat akun</button>
+          </form>
+
+          <form id="newPasswordForm" class="account-form" hidden>
+            <label for="newPassword">Kata sandi baru</label>
+            <input id="newPassword" name="password" type="password" autocomplete="new-password" minlength="8" required />
+            <label for="newPasswordConfirm">Ulangi kata sandi baru</label>
+            <input id="newPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="8" required />
+            <button class="account-submit" type="submit">Simpan kata sandi</button>
+          </form>
+
+          <p class="account-status" id="accountStatus" role="status" aria-live="polite"></p>
+          <p class="account-switch" id="accountSwitch"></p>
+        </div>
+
+        <section id="profilePanel" class="account-profile" hidden aria-labelledby="profileTitle">
+          <p class="account-eyebrow">AKUN PELANGGAN</p>
+          <h1 id="profileTitle">Akun Anda</h1>
+          <p class="account-intro">Masuk sebagai <strong id="profileEmail"></strong></p>
+          <form id="preferenceForm" class="account-preference-form">
+            <label class="account-consent" for="profileEmailConsent">
+              <input id="profileEmailConsent" type="checkbox" />
+              <span>Saya bersedia menerima informasi produk baru dan promo Urbann Attier melalui email. Saya dapat berhenti kapan saja.</span>
+            </label>
+            <button class="account-submit account-submit-secondary" type="submit">Simpan pilihan email</button>
+          </form>
+          <p class="account-status" id="profileStatus" role="status" aria-live="polite"></p>
+          <button class="account-logout" id="logoutButton" type="button">Keluar dari akun</button>
+        </section>
+      </section>
+      <p class="account-footnote">Belanja tanpa akun tetap tersedia dari katalog Urbann Attier.</p>
+    </main>
+    <dialog class="member-celebration" id="memberCelebration" aria-labelledby="celebrationTitle" aria-describedby="celebrationText">
+      <div class="celebration-card">
+        <div class="celebration-sparkles" aria-hidden="true"><span>✦</span><span>✧</span><span>✦</span><span>✧</span><span>✦</span></div>
+        <div class="celebration-check" aria-hidden="true">✓</div>
+        <p class="account-eyebrow">SELAMAT DATANG</p>
+        <h2 id="celebrationTitle">Selamat, Anda telah menjadi member Urbann Attier!</h2>
+        <p id="celebrationText">Akun Anda siap digunakan. Mari temukan koleksi yang sesuai untuk Anda.</p>
+        <a class="account-submit celebration-continue" href="index.html">Mulai belanja</a>
+      </div>
+    </dialog>
+  </body>
+</html>

@@ -259,7 +259,7 @@ function orderStatusClass(status) {
 async function loadOrders() {
   setStatus("#ordersStatus", "Memuat pesanan…");
   const { data, error } = await supabaseClient.from("orders")
-    .select("id, order_number, customer_name, customer_phone, customer_email, address_line, province, city, district, postal_code, customer_note, status, payment_status, payment_method, shipping_status, shipping_provider, shipping_service, tracking_number, subtotal_amount, packaging_fee, shipping_fee, total_amount, confirmed_at, confirmed_by_email, paid_at, paid_confirmed_by_email, created_at, updated_at, confirmed_by, paid_confirmed_by")
+    .select("id, order_number, customer_id, customer_name, customer_phone, customer_email, address_line, province, city, district, postal_code, customer_note, status, payment_status, payment_method, shipping_status, shipping_provider, shipping_service, tracking_number, subtotal_amount, discount_base_amount, discount_amount, discount_percent, discount_order_number, discount_tokens_remaining, packaging_fee, shipping_fee, total_amount, confirmed_at, confirmed_by_email, paid_at, paid_confirmed_by_email, created_at, updated_at, confirmed_by, paid_confirmed_by")
     .order("created_at", { ascending: false }).limit(100);
   if (error) {
     setStatus("#ordersStatus", `Pesanan gagal dimuat: ${error.message}`, true);
@@ -325,7 +325,7 @@ async function openOrderEditor(orderId) {
     <td><strong>${escapeHtml(item.product_name)}</strong><small>${escapeHtml(item.color_name)} · ${escapeHtml(item.size_name)} · ${escapeHtml(item.pricing_tier)}</small></td>
     <td>${Number(item.quantity)} pcs</td><td>${formatRupiah(item.unit_price)}</td><td>${formatRupiah(item.line_total)}</td>
   </tr>`).join("") : '<tr><td colspan="4">Rincian produk tidak tersedia.</td></tr>';
-  $("#orderMoneySummary").innerHTML = `<span>Produk ${formatRupiah(order.subtotal_amount)} + pengemasan ${formatRupiah(order.packaging_fee)} + ongkir ${order.shipping_fee == null ? "belum diisi" : formatRupiah(order.shipping_fee)}</span><strong>Total ${formatRupiah(order.total_amount)}</strong>`;
+  $("#orderMoneySummary").innerHTML = `<span>Produk ${formatRupiah(order.subtotal_amount)}${Number(order.discount_amount) > 0 ? ` − diskon member ${formatRupiah(order.discount_amount)}` : ""} + pengemasan ${formatRupiah(order.packaging_fee)} + ongkir ${order.shipping_fee == null ? "belum diisi" : formatRupiah(order.shipping_fee)}</span><strong>Total ${formatRupiah(order.total_amount)}</strong>`;
   $("#orderStatusSelect").value = order.status === "paid" ? "processing" : order.status;
   $("#paymentStatusSelect").value = order.payment_status;
   $("#orderShippingFee").value = order.shipping_fee ?? "";
@@ -365,6 +365,12 @@ function printOrderInvoice() {
   const shipping = order.shipping_fee == null ? "Belum ditentukan" : formatRupiah(order.shipping_fee);
   const totalLabel = order.shipping_fee == null ? "Total sementara" : "Total tagihan";
   const carrier = [order.shipping_provider, order.shipping_service].filter(Boolean).map(escapeHtml).join(" · ") || "Belum ditentukan";
+  const memberDiscountRow = order.customer_id
+    ? `<div><span>Diskon member${Number(order.discount_percent) ? ` ${Number(order.discount_percent)}% dari harga ecer ${formatRupiah(order.discount_base_amount)}` : ""}</span><strong>${Number(order.discount_amount) > 0 ? `−${formatRupiah(order.discount_amount)}` : "Tidak berlaku"}</strong></div>`
+    : "";
+  const remainingTokensNote = order.customer_id
+    ? `<div><span>Sisa kuota diskon saat pesanan dibuat</span><strong>${order.discount_tokens_remaining == null ? "—" : `${Number(order.discount_tokens_remaining)} dari 5 pesanan`}</strong></div>`
+    : "";
 
   $("#invoicePrintArea").innerHTML = `
     <header class="invoice-heading">
@@ -373,7 +379,7 @@ function printOrderInvoice() {
     </header>
     <section class="invoice-customer"><h2>Informasi pelanggan</h2><strong>${escapeHtml(order.customer_name)}</strong><span>${escapeHtml(order.customer_phone)}${order.customer_email ? ` · ${escapeHtml(order.customer_email)}` : ""}</span><span>${address || "Alamat belum tersedia"}</span>${order.customer_note ? `<small>Catatan: ${escapeHtml(order.customer_note)}</small>` : ""}</section>
     <table class="invoice-items"><thead><tr><th>Produk</th><th>Qty</th><th>Jumlah</th></tr></thead><tbody>${itemRows}</tbody></table>
-    <section class="invoice-totals"><div><span>Subtotal produk</span><strong>${formatRupiah(order.subtotal_amount)}</strong></div><div><span>Biaya pengemasan</span><strong>${formatRupiah(order.packaging_fee)}</strong></div><div><span>Ongkos kirim</span><strong>${shipping}</strong></div><div class="invoice-grand-total"><span>${totalLabel}</span><strong>${formatRupiah(order.total_amount)}</strong></div></section>
+    <section class="invoice-totals"><div><span>Subtotal produk</span><strong>${formatRupiah(order.subtotal_amount)}</strong></div>${memberDiscountRow}${remainingTokensNote}<div><span>Biaya pengemasan</span><strong>${formatRupiah(order.packaging_fee)}</strong></div><div><span>Ongkos kirim</span><strong>${shipping}</strong></div><div class="invoice-grand-total"><span>${totalLabel}</span><strong>${formatRupiah(order.total_amount)}</strong></div></section>
     <section class="invoice-status"><div><span>Status pembayaran</span><strong>${escapeHtml(paymentStatusLabel(order.payment_status))}</strong></div><div><span>Tahap pesanan</span><strong>${escapeHtml(orderStatusLabel(order.status))}</strong></div><div><span>Ekspedisi / layanan</span><strong>${carrier}</strong></div><div><span>Nomor resi</span><strong>${escapeHtml(order.tracking_number || "Belum tersedia")}</strong></div></section>
     <footer class="invoice-footer"><strong>Terima kasih telah berbelanja di Urbann Attier.</strong><span>Invoice ini merupakan bukti rincian pesanan.</span></footer>`;
 
@@ -497,7 +503,7 @@ async function saveOrder(event) {
     status: nextStatus,
     payment_status: nextPaymentStatus,
     shipping_fee: shippingFee,
-    total_amount: Number(order.subtotal_amount) + Number(order.packaging_fee) + Number(shippingFee || 0),
+    total_amount: Number(order.subtotal_amount) - Number(order.discount_amount || 0) + Number(order.packaging_fee) + Number(shippingFee || 0),
     shipping_provider: $("#orderShippingProvider").value.trim() || null,
     shipping_service: $("#orderShippingService").value.trim() || null,
     tracking_number: $("#orderTrackingNumber").value.trim() || null,

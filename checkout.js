@@ -22,6 +22,9 @@ let selectedShippingRate = null;
 let destinationSearchCache = new Map();
 let checkoutSubtotal = 0;
 let allPricesAvailable = false;
+let checkoutAuthReady = false;
+let checkoutMemberSession = null;
+let serverPaymentSummary = null;
 
 function escapeCheckoutHtml(value) {
   return window.urbannEscapeHtml(String(value ?? ""));
@@ -55,10 +58,11 @@ function getCheckoutPayloadSnapshot() {
 }
 
 function getCheckoutFingerprint() {
-  return JSON.stringify(getCheckoutPayloadSnapshot());
+  return JSON.stringify({ ...getCheckoutPayloadSnapshot(), memberId: checkoutMemberSession?.user?.id || null });
 }
 
 function hasMatchingCheckoutToken() {
+  if (!checkoutAuthReady) return false;
   const token = sessionStorage.getItem(checkoutTokenStorageKey);
   const savedFingerprint = sessionStorage.getItem(checkoutFingerprintStorageKey);
   return Boolean(token && savedFingerprint && savedFingerprint === getCheckoutFingerprint());
@@ -67,6 +71,7 @@ function hasMatchingCheckoutToken() {
 function resetShippingRates(message = "") {
   availableShippingRates = [];
   selectedShippingRate = null;
+  serverPaymentSummary = null;
   if (shippingRateList) shippingRateList.innerHTML = "";
   if (shippingRateStatus) shippingRateStatus.textContent = message;
   updateCheckoutSummary();
@@ -80,13 +85,16 @@ function updateOrderButton() {
   const hasPendingCheckout = hasMatchingCheckoutToken();
   const selectedRateMatchesCart = selectedShippingRate
     && selectedShippingRate.weightGrams === getItemsWeight(items);
-  const canSubmit = allPricesAvailable
+  const canSubmit = checkoutAuthReady
+    && allPricesAvailable
     && Boolean(selectedDestination)
     && Boolean(selectedRateMatchesCart)
     && (stockCheck.ok || hasPendingCheckout);
 
   checkoutWhatsAppButton.disabled = !canSubmit;
-  if (!allPricesAvailable) {
+  if (!checkoutAuthReady) {
+    checkoutWhatsAppButton.textContent = "Memeriksa akun…";
+  } else if (!allPricesAvailable) {
     checkoutWhatsAppButton.textContent = "Harga produk belum lengkap";
   } else if (!selectedDestination) {
     checkoutWhatsAppButton.textContent = "Pilih wilayah tujuan";
@@ -113,6 +121,32 @@ function updateCheckoutSummary() {
   const packagingElement = document.querySelector("#checkoutPackagingFee");
   const shippingElement = document.querySelector("#checkoutShippingFee");
   const grandTotalElement = document.querySelector("#checkoutGrandTotal");
+  const discountRow = document.querySelector("#checkoutDiscountRow");
+  const discountTokensRow = document.querySelector("#checkoutDiscountTokensRow");
+  const memberNote = document.querySelector("#checkoutMemberNote");
+
+  if (serverPaymentSummary) {
+    discountRow.hidden = !checkoutMemberSession;
+    discountTokensRow.hidden = !checkoutMemberSession;
+    if (checkoutMemberSession) {
+      document.querySelector("#checkoutDiscountLabel").textContent = serverPaymentSummary.discountAmount > 0
+        ? `Diskon member ${serverPaymentSummary.discountPercent}% (pesanan ${serverPaymentSummary.discountOrderNumber}/5)`
+        : "Diskon member";
+      document.querySelector("#checkoutDiscountAmount").textContent = serverPaymentSummary.discountAmount > 0
+        ? `−${UrbannCart.formatRupiah(serverPaymentSummary.discountAmount)}`
+        : "Tidak berlaku untuk pesanan ini";
+      document.querySelector("#checkoutDiscountTokens").textContent = `${serverPaymentSummary.discountTokensRemaining ?? 0} dari 5 pesanan`;
+      memberNote.textContent = "Potongan dan sisa kuota telah diverifikasi untuk pesanan ini. Kuota dihitung setelah pembayaran berhasil; pesanan yang masih menunggu pembayaran memegang kuota sementara.";
+    }
+  } else {
+    discountRow.hidden = true;
+    discountTokensRow.hidden = true;
+    if (memberNote) {
+      memberNote.innerHTML = checkoutMemberSession
+        ? "Diskon 5% berlaku untuk maksimal lima pesanan harga ecer yang berhasil dibayar. Potongan final dihitung setelah pesanan diverifikasi server."
+        : 'Diskon 5% berlaku untuk maksimal lima pesanan harga ecer yang berhasil dibayar. <a href="akun.html?mode=login&amp;return=checkout">Masuk atau daftar</a> untuk mendapatkan diskon member.';
+    }
+  }
 
   if (packagingElement) {
     packagingElement.textContent = packagingFee == null
@@ -125,19 +159,24 @@ function updateCheckoutSummary() {
       : UrbannCart.formatRupiah(selectedFee);
   }
   if (grandTotalElement) {
-    grandTotalElement.textContent = !allPricesAvailable
-      ? "Harga belum lengkap"
-      : packagingFee == null
-        ? "Menunggu biaya pengemasan"
-        : selectedFee == null
-          ? "Pilih layanan pengiriman"
-          : UrbannCart.formatRupiah(checkoutSubtotal + packagingFee + selectedFee);
+    if (serverPaymentSummary) {
+      grandTotalElement.textContent = UrbannCart.formatRupiah(serverPaymentSummary.amount);
+    } else {
+      grandTotalElement.textContent = !allPricesAvailable
+        ? "Harga belum lengkap"
+        : packagingFee == null
+          ? "Menunggu biaya pengemasan"
+          : selectedFee == null
+            ? "Pilih layanan pengiriman"
+            : UrbannCart.formatRupiah(checkoutSubtotal + packagingFee + selectedFee);
+    }
   }
 
   updateOrderButton();
 }
 
 function renderCheckout() {
+  serverPaymentSummary = null;
   const items = UrbannCart.getItems();
   UrbannCart.updateBadges();
 
@@ -196,6 +235,31 @@ function renderCheckout() {
 
 window.URBANN_PRODUCTS_READY.then(renderCheckout);
 window.addEventListener("urbann:catalog-updated", renderCheckout);
+
+async function initializeCheckoutMember() {
+  const client = window.urbannSupabaseClient;
+  if (!client) {
+    checkoutAuthReady = true;
+    updateOrderButton();
+    return;
+  }
+  try {
+    const { data } = await client.auth.getSession();
+    checkoutMemberSession = data?.session || null;
+    client.auth.onAuthStateChange((_event, session) => {
+      checkoutMemberSession = session || null;
+      serverPaymentSummary = null;
+      updateCheckoutSummary();
+    });
+  } catch {
+    checkoutActionStatus.textContent = "Status akun belum dapat diperiksa. Anda masih bisa berbelanja sebagai tamu.";
+    checkoutMemberSession = null;
+  } finally {
+    checkoutAuthReady = true;
+    updateOrderButton();
+  }
+}
+initializeCheckoutMember();
 
 function getCheckoutToken(fingerprint) {
   let token = sessionStorage.getItem(checkoutTokenStorageKey);
@@ -364,6 +428,7 @@ shippingRateList?.addEventListener("change", (event) => {
     cost: Number(rate.cost),
     weightGrams: getItemsWeight(),
   };
+  serverPaymentSummary = null;
   updateCheckoutSummary();
 });
 
@@ -429,7 +494,18 @@ recipientForm?.addEventListener("submit", async (event) => {
     checkoutActionStatus.textContent = "Pilih wilayah tujuan dari hasil pencarian RajaOngkir terlebih dahulu.";
     return;
   }
-  const fingerprint = JSON.stringify({ customer, items: cartSnapshot });
+  const client = window.urbannSupabaseClient;
+  if (!client) {
+    checkoutActionStatus.textContent = "Koneksi Supabase belum siap. Muat ulang halaman lalu coba lagi.";
+    return;
+  }
+  const { data: sessionResult, error: sessionError } = await client.auth.getSession();
+  if (sessionError) {
+    checkoutActionStatus.textContent = "Status akun belum dapat diperiksa. Muat ulang halaman lalu coba lagi.";
+    return;
+  }
+  checkoutMemberSession = sessionResult?.session || null;
+  const fingerprint = JSON.stringify({ customer, items: cartSnapshot, memberId: checkoutMemberSession?.user?.id || null });
   const hasPendingCheckout = sessionStorage.getItem(checkoutTokenStorageKey)
     && sessionStorage.getItem(checkoutFingerprintStorageKey) === fingerprint;
   if (!stockCheck.ok && !hasPendingCheckout) {
@@ -443,12 +519,10 @@ recipientForm?.addEventListener("submit", async (event) => {
   checkoutActionStatus.textContent = "Memeriksa stok, harga, dan tarif pengiriman di server.";
 
   try {
-    const client = window.urbannSupabaseClient;
-    if (!client) throw new Error("Koneksi Supabase belum siap. Muat ulang halaman lalu coba lagi.");
-
     const { data, error } = await client.functions.invoke("create-midtrans-payment", {
       body: {
         checkoutToken: token,
+        memberAccessToken: checkoutMemberSession?.access_token || null,
         customer,
         items: cartSnapshot,
         shipping: {
@@ -463,6 +537,15 @@ recipientForm?.addEventListener("submit", async (event) => {
     if (data?.error || !data?.snapToken || !data?.clientKey || !data?.orderNumber) {
       throw new Error(data?.error || "Respons pembayaran tidak lengkap.");
     }
+
+    serverPaymentSummary = {
+      amount: Number(data.amount),
+      discountAmount: Number(data.discountAmount || 0),
+      discountPercent: Number(data.discountPercent || 0),
+      discountOrderNumber: data.discountOrderNumber,
+      discountTokensRemaining: data.discountTokensRemaining,
+    };
+    updateCheckoutSummary();
 
     await loadMidtransSnap(data.clientKey);
     checkoutActionStatus.textContent = `Pesanan ${data.orderNumber} dibuat dengan total ${data.formattedAmount}. Selesaikan pembayaran pada jendela Midtrans.`;
@@ -487,4 +570,9 @@ recipientForm?.addEventListener("submit", async (event) => {
   } finally {
     updateOrderButton();
   }
+});
+
+recipientForm?.addEventListener("input", () => {
+  serverPaymentSummary = null;
+  updateCheckoutSummary();
 });

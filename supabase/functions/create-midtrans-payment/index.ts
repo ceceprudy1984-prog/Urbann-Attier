@@ -116,16 +116,34 @@ async function requestSnapToken(order: Record<string, unknown>, paymentId: strin
 
   const { data: items, error: itemsError } = await client
     .from("order_items")
-    .select("product_name,color_name,size_name,quantity,line_total")
+    .select("product_name,color_name,size_name,quantity,line_total,purchase_mode,pricing_tier")
     .eq("order_id", String(order.order_id));
   if (itemsError) throw itemsError;
 
-  const itemDetails = (items ?? []).map((item) => ({
-    id: `${String(item.product_name).slice(0, 30)}-${String(item.color_name).slice(0, 12)}-${String(item.size_name).slice(0, 8)}`.replace(/[^a-zA-Z0-9_-]/g, ""),
-    price: Math.floor(Number(item.line_total) / Number(item.quantity)),
-    quantity: Number(item.quantity),
-    name: `${item.product_name} (${item.color_name}, ${item.size_name})`.slice(0, 50),
-  }));
+  const discountAmount = Number(order.discount_amount ?? 0);
+  const discountBaseAmount = Number(order.discount_base_amount ?? 0);
+  const eligibleItems = (items ?? []).filter((item) => item.purchase_mode === "ecer" && item.pricing_tier === "ecer");
+  let discountLeft = discountAmount;
+  const itemDetails = (items ?? []).map((item, index) => {
+    const lineTotal = Number(item.line_total);
+    let lineDiscount = 0;
+    if (item.purchase_mode === "ecer" && item.pricing_tier === "ecer" && discountLeft > 0) {
+      const isLastEligible = eligibleItems.at(-1) === item;
+      lineDiscount = isLastEligible
+        ? discountLeft
+        : Math.min(discountLeft, Math.round(discountAmount * lineTotal / discountBaseAmount));
+      discountLeft -= lineDiscount;
+    }
+    const netLineTotal = lineTotal - lineDiscount;
+    if (!Number.isSafeInteger(netLineTotal) || netLineTotal < 0) throw new Error("Rincian diskon pesanan tidak valid.");
+    const itemName = `${item.product_name} (${item.color_name}, ${item.size_name}) × ${Number(item.quantity)}${lineDiscount ? " · Diskon member 5%" : ""}`;
+    return {
+      id: `${String(item.product_name).slice(0, 24)}-${index + 1}`.replace(/[^a-zA-Z0-9_-]/g, ""),
+      price: netLineTotal,
+      quantity: 1,
+      name: itemName.slice(0, 50),
+    };
+  });
   const packagingFee = Number(order.packaging_fee ?? 0);
   const shippingFee = Number(order.shipping_fee ?? 0);
   if (packagingFee > 0) itemDetails.push({ id: "packaging", price: packagingFee, quantity: 1, name: "Biaya pengemasan" });
@@ -134,6 +152,10 @@ async function requestSnapToken(order: Record<string, unknown>, paymentId: strin
   const customer = order.customer as Record<string, unknown>;
   const grossAmount = Number(order.amount);
   if (!Number.isSafeInteger(grossAmount) || grossAmount < 1) throw new Error("Total pembayaran pesanan tidak valid.");
+  const itemDetailsTotal = itemDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  if (discountLeft !== 0 || (discountAmount > 0 && discountBaseAmount <= 0) || itemDetailsTotal !== grossAmount) {
+    throw new Error("Rincian pembayaran dan potongan diskon tidak sesuai dengan total pesanan. Hubungi admin.");
+  }
 
   const response = await fetch("https://app.sandbox.midtrans.com/snap/v1/transactions", {
     method: "POST",
@@ -195,6 +217,7 @@ Deno.serve(async (request) => {
     const customer = body?.customer;
     const items = body?.items;
     const shipping = body?.shipping;
+    const memberAccessToken = String(body?.memberAccessToken ?? "").trim();
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutToken)) {
       return jsonResponse({ error: "Sesi checkout tidak valid. Muat ulang halaman." }, 400);
     }
@@ -220,6 +243,12 @@ Deno.serve(async (request) => {
 
     const verifiedRate = await findShippingRate(destinationId, weightGrams, courierCode, serviceName);
     const client = getServiceClient();
+    let customerId: string | null = null;
+    if (memberAccessToken) {
+      const { data: authData, error: authError } = await client.auth.getUser(memberAccessToken);
+      if (authError || !authData.user) return jsonResponse({ error: "Sesi akun tidak valid. Masuk kembali sebelum membayar." }, 401);
+      customerId = authData.user.id;
+    }
     const { data: result, error } = await client.rpc("prepare_midtrans_order", {
       p_checkout_token: checkoutToken,
       p_customer: customer,
@@ -231,6 +260,7 @@ Deno.serve(async (request) => {
         service: verifiedRate.service,
         fee: verifiedRate.cost,
       },
+      p_customer_id: customerId,
     });
     if (error) throw error;
     if (!result?.payment_id || !result?.order_id || !result?.order_number) {
@@ -239,7 +269,7 @@ Deno.serve(async (request) => {
 
     const { data: order, error: orderError } = await client
       .from("orders")
-      .select("id,order_number,customer_name,customer_phone,address_line,city,postal_code,packaging_fee,shipping_fee,shipping_provider,total_amount,status,payment_status")
+      .select("id,order_number,customer_name,customer_phone,address_line,city,postal_code,packaging_fee,shipping_fee,shipping_provider,total_amount,discount_amount,discount_base_amount,discount_percent,discount_order_number,discount_tokens_remaining,status,payment_status")
       .eq("id", result.order_id)
       .single();
     if (orderError) throw orderError;
@@ -253,6 +283,8 @@ Deno.serve(async (request) => {
       packaging_fee: Number(order.packaging_fee),
       shipping_fee: Number(order.shipping_fee),
       shipping_provider: order.shipping_provider,
+      discount_amount: Number(order.discount_amount ?? 0),
+      discount_base_amount: Number(order.discount_base_amount ?? 0),
       customer: {
         name: order.customer_name,
         phone: order.customer_phone,
@@ -277,6 +309,10 @@ Deno.serve(async (request) => {
       clientKey,
       amount: preparedOrder.amount,
       formattedAmount: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(preparedOrder.amount)),
+      discountAmount: Number(order.discount_amount ?? 0),
+      discountPercent: Number(order.discount_percent ?? 0),
+      discountOrderNumber: order.discount_order_number == null ? null : Number(order.discount_order_number),
+      discountTokensRemaining: order.discount_tokens_remaining == null ? null : Number(order.discount_tokens_remaining),
     });
   } catch (error) {
     const message = getErrorMessage(error);

@@ -74,9 +74,12 @@
         <aside class="checkout-summary" aria-labelledby="checkoutSummaryTitle">
           <h2 id="checkoutSummaryTitle">Ringkasan pembayaran</h2>
           <div id="checkoutTotals"></div>
+          <p class="checkout-total-row" id="checkoutDiscountRow" hidden><span id="checkoutDiscountLabel">Diskon member</span><strong id="checkoutDiscountAmount">-</strong></p>
+          <p class="checkout-total-row" id="checkoutDiscountTokensRow" hidden><span>Sisa kuota diskon</span><strong id="checkoutDiscountTokens">-</strong></p>
           <p class="checkout-total-row"><span>Biaya pengemasan</span><strong id="checkoutPackagingFee">Akan dikonfirmasi admin</strong></p>
           <p class="checkout-total-row"><span>Ongkos kirim</span><strong id="checkoutShippingFee">Pilih layanan</strong></p>
           <p class="checkout-grand-total"><span>Total sementara<br><small>termasuk ongkir perkiraan</small></span><strong id="checkoutGrandTotal">-</strong></p>
+          <p class="checkout-summary-note" id="checkoutMemberNote">Diskon 5% berlaku untuk maksimal lima pesanan harga ecer yang berhasil dibayar. <a href="akun.html?mode=login&amp;return=checkout">Masuk atau daftar</a> untuk mendapatkan diskon member.</p>
           <button class="btn btn-primary checkout-submit" id="checkoutPaymentButton" type="submit" form="recipientForm" disabled>Memuat pesanan…</button>
           <p class="checkout-action-status" id="checkoutActionStatus" role="status" aria-live="polite"></p>
           <p class="checkout-summary-note">Tarif ongkir dan total dihitung kembali sebelum pembayaran. Stok pesanan yang menunggu pembayaran dicadangkan sementara dan dikembalikan jika transaksi gagal atau kedaluwarsa.</p>

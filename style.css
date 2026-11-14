@@ -606,6 +606,9 @@ button:focus-visible {
   border: 1px solid var(--cream-dark);
   border-radius: var(--radius-lg);
   background: var(--cream);
+  box-shadow: 15px 10px 11px 0px rgba(0,0,0,0.29);
+-webkit-box-shadow: 15px 10px 11px 0px rgba(0,0,0,0.29);
+-moz-box-shadow: 15px 10px 11px 0px rgba(0,0,0,0.29);
 }
 
 .custom-order-visual img {
@@ -616,11 +619,6 @@ button:focus-visible {
   object-position: center;
 }
 
-.custom-order-visual figcaption {
-  padding: 12px 16px;
-  color: var(--gray);
-  font-size: 12px;
-}
 
 .custom-order-content > .section-label {
   margin-bottom: 8px;
@@ -1571,6 +1569,57 @@ button:focus-visible {
   }
 }
 
+.member-welcome {
+  width: min(92vw, 560px);
+  max-width: 560px;
+  max-height: min(92vh, 760px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--cream-dark);
+  border-radius: 22px;
+  color: var(--charcoal, #302b2c);
+  background: #fffdfa;
+  box-shadow: 0 24px 90px rgb(35 25 20 / 30%);
+}
+
+.member-welcome::backdrop {
+  background: rgb(28 23 22 / 68%);
+  backdrop-filter: blur(5px);
+}
+
+.member-welcome[open] { animation: member-welcome-in .36s ease-out both; }
+
+.member-welcome-card {
+  position: relative;
+  padding: clamp(28px, 6vw, 48px);
+  text-align: center;
+}
+
+.member-welcome-logo { width: 66px; height: 66px; margin-bottom: 14px; object-fit: contain; }
+.member-welcome .section-label { margin: 0 0 9px; color: #9b753c; }
+.member-welcome h2 { margin: 0; color: #302b2c; font-family: Georgia, "Times New Roman", serif; font-size: clamp(27px, 6vw, 38px); line-height: 1.13; }
+.member-welcome-intro { max-width: 430px; margin: 14px auto 20px; color: #70686a; line-height: 1.65; }
+
+.member-benefits { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; text-align: left; }
+.member-benefits li { display: grid; grid-template-columns: 24px 1fr; gap: 10px; padding: 14px; border: 1px solid #e8ddd0; border-radius: 12px; background: #faf6ef; color: #625b5b; font-size: 14px; line-height: 1.5; }
+.member-benefits li > span:first-child { color: #b79a68; font-size: 18px; }
+.member-benefits strong { color: #302b2c; }
+
+.member-welcome-actions { display: grid; gap: 10px; margin-top: 22px; }
+.member-welcome-actions .btn { width: 100%; min-height: 48px; justify-content: center; cursor: pointer; font: inherit; text-decoration: none; }
+.member-welcome-actions .btn-secondary { border: 1px solid #d8c8b5; color: #5e5145; background: #fffdfa; }
+.member-welcome-note { margin: 14px 0 0; color: #807779; font-size: 12px; }
+.member-welcome-close { position: absolute; top: 14px; right: 16px; width: 36px; height: 36px; border: 0; border-radius: 50%; color: #746b6b; background: #f5efe8; font-size: 25px; line-height: 1; cursor: pointer; }
+
+@keyframes member-welcome-in {
+  from { opacity: 0; transform: translateY(14px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-welcome[open] { animation: none; }
+}
+
 @media (max-width: 480px) {
   .section {
     padding: 60px 5%;
@@ -2149,6 +2198,9 @@ button:focus-visible {
 .checkout-total-row {
   margin-bottom: 10px;
   color: var(--gray);
+}
+.checkout-total-row[hidden] {
+  display: none;
 }
 .checkout-total-row strong,
 .checkout-grand-total strong {
