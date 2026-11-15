@@ -45,6 +45,9 @@ const escapeHtml = window.urbannEscapeHtml;
 const safeImageUrl = window.urbannSafeImageUrl;
 let publicSupabaseClient = null;
 let catalogReloadTimer = null;
+let bestsellerProductIds = [];
+let bestsellerLoadFailed = false;
+let activeSpotlight = "new";
 
 function formatRupiah(amount) {
   return amount == null ? "Segera tersedia" : `Rp ${Number(amount).toLocaleString("id-ID")}`;
@@ -72,6 +75,76 @@ function renderProducts(searchTerm = "") {
     : '<p class="produk-empty">Belum ada produk aktif di katalog. Silakan cek kembali nanti.</p>';
 }
 
+function renderSpotlightProductCard(item, badge) {
+  const image = safeImageUrl(item.varianWarna[0]?.foto);
+  return `<article class="produk-card">
+    <div class="produk-img"><span class="spotlight-product-badge">${escapeHtml(badge)}</span><img src="${escapeHtml(image)}" alt="${escapeHtml(item.nama)}" loading="lazy"></div>
+    <div class="produk-info">
+      <h3 class="produk-nama">${escapeHtml(item.nama)}</h3>
+      <p class="produk-harga">${formatRupiah(item.harga)}</p>
+      <a href="detail-produk.html?id=${encodeURIComponent(item.id)}" class="btn-detail">Lihat Detail</a>
+    </div>
+  </article>`;
+}
+
+function renderSpotlight() {
+  const panel = document.querySelector("#spotlightPanel");
+  const products = document.querySelector("#spotlightProducts");
+  const promo = document.querySelector("#spotlightPromo");
+  const description = document.querySelector("#spotlightDescription");
+  if (!panel || !products || !promo || !description) return;
+
+  document.querySelectorAll("[data-spotlight-tab]").forEach((button) => {
+    const active = button.dataset.spotlightTab === activeSpotlight;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  const activeTab = document.querySelector(`[data-spotlight-tab="${activeSpotlight}"]`);
+  if (activeTab) panel.setAttribute("aria-labelledby", activeTab.id);
+
+  if (activeSpotlight === "promo") {
+    description.textContent = "Benefit khusus pelanggan yang bergabung sebagai member Urbann Attier.";
+    products.hidden = true;
+    promo.hidden = false;
+    return;
+  }
+
+  promo.hidden = true;
+  products.hidden = false;
+  if (activeSpotlight === "best") {
+    description.textContent = "Peringkat dihitung dari jumlah produk pada pesanan yang pembayarannya sudah lunas.";
+    if (bestsellerLoadFailed) {
+      products.innerHTML = '<p class="produk-empty">Pilihan produk terlaris akan segera hadir.</p>';
+      return;
+    }
+    const bestsellers = bestsellerProductIds
+      .map((id) => produk.find((item) => Number(item.id) === Number(id)))
+      .filter(Boolean)
+      .slice(0, 3);
+    products.innerHTML = bestsellers.length
+      ? bestsellers.map((item) => renderSpotlightProductCard(item, "Terlaris")).join("")
+      : '<p class="produk-empty">Pilihan terlaris akan muncul setelah ada pesanan yang berhasil dibayar.</p>';
+    return;
+  }
+
+  description.textContent = "Koleksi terbaru yang ditambahkan ke katalog Urbann Attier.";
+  const newest = [...produk]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 3);
+  products.innerHTML = newest.length
+    ? newest.map((item) => renderSpotlightProductCard(item, "Baru")).join("")
+    : '<p class="produk-empty">Produk baru akan tampil di sini setelah ditambahkan ke katalog.</p>';
+}
+
+async function loadBestsellerProductIds() {
+  if (!publicSupabaseClient) return;
+  const { data, error } = await publicSupabaseClient.rpc("storefront_bestseller_product_ids", { p_limit: 3 });
+  bestsellerLoadFailed = Boolean(error);
+  bestsellerProductIds = error ? [] : (data || []).map((row) => row.product_id);
+  if (error) console.warn("Pilihan produk terlaris belum tersedia:", error.message);
+  renderSpotlight();
+}
+
 function mapCatalog(products, variants, images, sizes, inventory) {
   return products.map((product) => {
     const productVariants = variants.filter((variant) => variant.product_id === product.id);
@@ -79,6 +152,7 @@ function mapCatalog(products, variants, images, sizes, inventory) {
     return {
       id: product.id,
       nama: product.name,
+      createdAt: product.created_at,
       harga: product.price_retail,
       hargaGrosir: product.price_wholesale,
       hargaSerian: product.price_series,
@@ -127,7 +201,7 @@ async function loadCatalog() {
   window.urbannSupabaseClient = publicSupabaseClient;
   const [productsResult, settingsResult] = await Promise.all([
     publicSupabaseClient.from("products")
-      .select("id, name, slug, category, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order")
+      .select("id, name, slug, category, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order, created_at")
       .eq("is_active", true).order("sort_order", { ascending: true }).order("name", { ascending: true }),
     publicSupabaseClient.from("store_public_settings").select("packaging_fee").eq("id", 1).maybeSingle(),
   ]);
@@ -157,6 +231,8 @@ function scheduleCatalogRefresh() {
       produk = await loadCatalog();
       window.urbannProducts = produk;
       renderProducts(productSearchInput?.value || "");
+      await loadBestsellerProductIds();
+      renderSpotlight();
       window.dispatchEvent(new CustomEvent("urbann:catalog-updated", { detail: produk }));
     } catch (error) {
       console.error("Katalog Urbann Attier gagal diperbarui:", error);
@@ -183,6 +259,8 @@ window.URBANN_PRODUCTS_READY = loadCatalog().then((loadedProducts) => {
   produk = loadedProducts;
   window.urbannProducts = produk;
   renderProducts(productSearchInput?.value || "");
+  renderSpotlight();
+  loadBestsellerProductIds();
   subscribeToCatalogChanges();
   return produk;
 }).catch((error) => {
@@ -190,6 +268,7 @@ window.URBANN_PRODUCTS_READY = loadCatalog().then((loadedProducts) => {
   if (grid) grid.innerHTML = '<p class="produk-empty">Katalog sedang tidak dapat dimuat. Silakan muat ulang halaman beberapa saat lagi.</p>';
   produk = [];
   window.urbannProducts = produk;
+  renderSpotlight();
   return produk;
 });
 
@@ -202,4 +281,11 @@ productSearch?.addEventListener("submit", (event) => {
 });
 productSearchInput?.addEventListener("input", () => {
   if (!productSearchInput.value.trim()) renderProducts();
+});
+
+document.querySelectorAll("[data-spotlight-tab]").forEach((button) => {
+  button.addEventListener("click", () => {
+    activeSpotlight = button.dataset.spotlightTab;
+    renderSpotlight();
+  });
 });

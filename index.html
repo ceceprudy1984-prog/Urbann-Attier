@@ -77,6 +77,38 @@
     </button>
   </nav>
 
+  <!-- SOROTAN PRODUK DAN PROMO -->
+  <section class="spotlight-section" id="sorotan" aria-labelledby="spotlightTitle">
+    <div class="spotlight-inner">
+      <div class="section-header spotlight-header">
+        <span class="section-label">Pilihan Urbann Attier</span>
+        <h2 id="spotlightTitle">Temukan yang sedang istimewa</h2>
+        <p>Lihat koleksi yang baru hadir, pilihan pelanggan, dan benefit khusus member.</p>
+      </div>
+      <div class="spotlight-tabs" role="tablist" aria-label="Sorotan toko">
+        <button class="spotlight-tab is-active" id="spotlightTabNew" type="button" role="tab" aria-selected="true" aria-controls="spotlightPanel" data-spotlight-tab="new">Produk baru</button>
+        <button class="spotlight-tab" id="spotlightTabBest" type="button" role="tab" aria-selected="false" aria-controls="spotlightPanel" data-spotlight-tab="best">Terlaris</button>
+        <button class="spotlight-tab" id="spotlightTabPromo" type="button" role="tab" aria-selected="false" aria-controls="spotlightPanel" data-spotlight-tab="promo">Promo member</button>
+      </div>
+      <div class="spotlight-panel" id="spotlightPanel" role="tabpanel" aria-labelledby="spotlightTabNew" tabindex="0">
+        <p class="spotlight-description" id="spotlightDescription">Koleksi terbaru yang ditambahkan ke katalog Urbann Attier.</p>
+        <div class="produk-grid spotlight-products" id="spotlightProducts" aria-live="polite">
+          <p class="produk-empty">Memuat pilihan produk…</p>
+        </div>
+        <article class="spotlight-promo" id="spotlightPromo" hidden>
+          <div class="spotlight-promo-copy">
+            <span class="spotlight-promo-label">Benefit member</span>
+            <h3>Diskon 5% untuk lima pesanan pertama</h3>
+            <p>Member mendapat potongan 5% untuk maksimal lima pesanan harga ecer yang berhasil dibayar. Setelah kuota digunakan, berlaku harga normal.</p>
+            <a class="btn btn-primary" href="akun.html?mode=register">Daftar sekarang</a>
+          </div>
+          <div class="spotlight-promo-mark" aria-hidden="true">5%</div>
+        </article>
+      </div>
+      <div class="spotlight-footer"><a href="#produk">Lihat seluruh koleksi <span aria-hidden="true">&rarr;</span></a></div>
+    </div>
+  </section>
+
   <!-- HERO -->
   <section class="hero" id="beranda">
     <div class="hero-content">

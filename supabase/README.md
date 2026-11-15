@@ -12,6 +12,7 @@ Folder ini berisi migrasi Supabase untuk website Urbann Attier. Project yang saa
 6. Untuk akun pelanggan dan diskon, jalankan `202611140001_customer_accounts.sql` lalu `202611140002_member_discount.sql` setelah migrasi checkout dan pembayaran di atas. Diskon 5% berlaku pada bagian harga ecer untuk maksimal lima pesanan yang berhasil dibayar. Pesanan menunggu pembayaran memegang kuota sementara; pembatalan, penolakan, atau refund melepaskannya. Nilai potongan dihitung ulang di server dan disimpan bersama sisa kuota pada data pesanan agar dapat dicetak di invoice.
 7. Jalankan `202611140003_admin_order_realtime.sql` agar perubahan status pesanan masuk ke dashboard admin secara langsung. Dashboard menampilkan pemberitahuan untuk pesanan baru dan perubahan status pembayaran/tahap pesanan selama admin sedang membuka dashboard.
 8. Jalankan `202611150001_admin_member_directory.sql` untuk mengaktifkan halaman **Data member** pada dashboard. Fungsi database membatasi daftar ini hanya untuk admin aktif dan mengambil email akun tanpa membuka tabel `auth.users` ke frontend publik.
+9. Jalankan `202611150002_storefront_bestsellers.sql` untuk bagian **Terlaris** di halaman utama. Fungsi publik hanya mengembalikan ID produk aktif yang peringkatnya dihitung dari jumlah barang pada pesanan dengan pembayaran lunas; data pelanggan dan rincian pesanan tidak dibuka.
 
 ## Menyiapkan login pelanggan
 
@@ -48,3 +49,5 @@ Pesanan dan pembayaran hanya bisa dibaca atau diubah admin melalui kebijakan dat
 5. Setelah menjalankan migrasi akun dan diskon, perbarui/deploy kode Edge Function yang sudah ada bernama `create-midtrans-payment` dari `supabase/functions/create-midtrans-payment/index.ts`. Jangan membuat fungsi baru dengan nama berbeda; checkout memanggil slug tersebut. Deploy perubahan file website (`checkout.js`, `checkout.html`, `akun.js`, `admin.js`, `index.html`, dan `style.css`) bersamaan agar login checkout, nominal Midtrans, dan invoice menampilkan aturan yang sama.
 
 API key RajaOngkir hanya disimpan sebagai secret server. Jangan menyalinnya ke `supabase-config.js`, JavaScript halaman, atau GitHub. API Shipping Cost RajaOngkir menghitung tarif live; respons dan ketersediaan layanan dapat berbeda sesuai rute dan kurir.
+
+Bagian sorotan halaman utama menampilkan tiga produk terbaru berdasarkan waktu produk ditambahkan dan tiga produk terlaris berdasarkan jumlah item dari pesanan lunas. Tab promo saat ini menampilkan benefit diskon member 5% yang sudah disepakati; pengaturan kampanye promo lain melalui dashboard admin belum tersedia.
