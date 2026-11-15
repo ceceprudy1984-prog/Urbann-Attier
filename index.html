@@ -95,14 +95,23 @@
         <div class="produk-grid spotlight-products" id="spotlightProducts" aria-live="polite">
           <p class="produk-empty">Memuat pilihan produk…</p>
         </div>
+        <article class="spotlight-launch" id="spotlightLaunch" hidden>
+          <div class="spotlight-launch-image-wrap"><img id="spotlightLaunchImage" alt="" /><span class="spotlight-launch-stamp">SEGERA HADIR</span></div>
+          <div class="spotlight-launch-copy"><span class="spotlight-promo-label">Koleksi berikutnya</span><h3 id="spotlightLaunchTitle"></h3><p id="spotlightLaunchMessage"></p><p class="spotlight-launch-date" id="spotlightLaunchDate"></p><a class="btn btn-primary" href="#produk">Jelajahi koleksi kami</a></div>
+        </article>
         <article class="spotlight-promo" id="spotlightPromo" hidden>
           <div class="spotlight-promo-copy">
-            <span class="spotlight-promo-label">Benefit member</span>
-            <h3>Diskon 5% untuk lima pesanan pertama</h3>
-            <p>Member mendapat potongan 5% untuk maksimal lima pesanan harga ecer yang berhasil dibayar. Setelah kuota digunakan, berlaku harga normal.</p>
-            <a class="btn btn-primary" href="akun.html?mode=register">Daftar sekarang</a>
+            <span class="spotlight-promo-label" id="spotlightPromoBadge"></span>
+            <h3 id="spotlightPromoTitle"></h3>
+            <p id="spotlightPromoMessage"></p>
+            <p class="spotlight-promo-date" id="spotlightPromoDate"></p>
+            <a class="btn btn-primary" id="spotlightPromoLink" href="#produk"></a>
           </div>
-          <div class="spotlight-promo-mark" aria-hidden="true">5%</div>
+          <img class="spotlight-promo-image" id="spotlightPromoImage" alt="" hidden />
+          <div class="spotlight-promo-mark" aria-hidden="true">✦</div>
+        </article>
+        <article class="spotlight-promo-empty" id="spotlightPromoEmpty" hidden>
+          <span aria-hidden="true">✦</span><div><strong>Promo berikutnya sedang disiapkan</strong><p>Daftar sebagai member agar lebih mudah mendapatkan kabar saat promo baru tersedia.</p></div><a href="akun.html?mode=register">Gabung sebagai member</a>
         </article>
       </div>
       <div class="spotlight-footer"><a href="#produk">Lihat seluruh koleksi <span aria-hidden="true">&rarr;</span></a></div>

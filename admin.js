@@ -25,6 +25,9 @@ const state = {
   sizes: [],
   stockDraft: new Map(),
   imageFiles: new Map(),
+  spotlightFiles: { launch: null, promo: null },
+  spotlightBusy: false,
+  homepageSettings: null,
   busy: false,
 };
 
@@ -182,6 +185,7 @@ function setActiveView(viewName) {
   $("#overviewPage").hidden = viewName !== "overview";
   $("#ordersPage").hidden = viewName !== "orders";
   $("#membersPage").hidden = viewName !== "members";
+  $("#spotlightAdminPage").hidden = viewName !== "spotlight";
   $("#productsPage").hidden = viewName !== "products";
   document.querySelectorAll("[data-admin-view]").forEach((button) => {
     const active = button.dataset.adminView === viewName;
@@ -191,6 +195,186 @@ function setActiveView(viewName) {
   if (viewName === "products") loadProducts();
   if (viewName === "orders") loadOrders();
   if (viewName === "members") loadMembers();
+  if (viewName === "spotlight") loadHomepageContent();
+}
+
+const homepageContentColumns = "homepage_launch_active, homepage_launch_title, homepage_launch_message, homepage_launch_image_url, homepage_launch_at, homepage_promo_active, homepage_promo_badge, homepage_promo_title, homepage_promo_description, homepage_promo_image_url, homepage_promo_cta_label, homepage_promo_cta_url, homepage_promo_starts_at, homepage_promo_ends_at";
+
+function toDateTimeLocal(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocal(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error("Tanggal promo atau peluncuran tidak valid.");
+  return date.toISOString();
+}
+
+function safeCampaignUrl(value, { allowEmpty = false } = {}) {
+  const text = String(value || "").trim();
+  if (!text && allowEmpty) return null;
+  if (text.startsWith("#") || (text.startsWith("/") && !text.startsWith("//"))) return text;
+  try {
+    const url = new URL(text);
+    if (["http:", "https:"].includes(url.protocol)) return url.href;
+  } catch { /* report a clear validation message below */ }
+  throw new Error("Tautan harus berupa alamat http/https, tautan relatif, atau tujuan seperti #produk.");
+}
+
+function showHomepageImagePreview(type, url) {
+  const preview = $(`#homepage${type === "launch" ? "Launch" : "Promo"}Preview`);
+  let safeUrl = "";
+  try {
+    safeUrl = String(url || "").startsWith("blob:") ? url : safeCampaignUrl(url, { allowEmpty: true });
+  } catch { /* keep the preview empty while an address is incomplete */ }
+  preview.hidden = !safeUrl;
+  if (safeUrl) preview.src = safeUrl;
+  else preview.removeAttribute("src");
+}
+
+async function loadHomepageContent() {
+  if (!supabaseClient || state.spotlightBusy) return;
+  setStatus("#homepageContentStatus", "Memuat konten halaman utama…");
+  const { data, error } = await supabaseClient.from("store_public_settings")
+    .select(homepageContentColumns).eq("id", 1).maybeSingle();
+  if (error) {
+    setStatus("#homepageContentStatus", `Konten belum dapat dimuat: ${error.message}. Pastikan migrasi sorotan halaman utama sudah dijalankan.`, true);
+    return;
+  }
+  const settings = data || {};
+  state.homepageSettings = settings;
+  $("#homepageLaunchActive").checked = Boolean(settings.homepage_launch_active);
+  $("#homepageLaunchTitle").value = settings.homepage_launch_title || "";
+  $("#homepageLaunchMessage").value = settings.homepage_launch_message || "";
+  $("#homepageLaunchAt").value = toDateTimeLocal(settings.homepage_launch_at);
+  $("#homepageLaunchImageUrl").value = settings.homepage_launch_image_url || "";
+  $("#homepagePromoActive").checked = Boolean(settings.homepage_promo_active);
+  $("#homepagePromoBadge").value = settings.homepage_promo_badge || "PROMO";
+  $("#homepagePromoTitle").value = settings.homepage_promo_title || "";
+  $("#homepagePromoDescription").value = settings.homepage_promo_description || "";
+  $("#homepagePromoStartsAt").value = toDateTimeLocal(settings.homepage_promo_starts_at);
+  $("#homepagePromoEndsAt").value = toDateTimeLocal(settings.homepage_promo_ends_at);
+  $("#homepagePromoCtaLabel").value = settings.homepage_promo_cta_label || "Lihat promo";
+  $("#homepagePromoCtaUrl").value = settings.homepage_promo_cta_url || "#produk";
+  $("#homepagePromoImageUrl").value = settings.homepage_promo_image_url || "";
+  state.spotlightFiles = { launch: null, promo: null };
+  showHomepageImagePreview("launch", settings.homepage_launch_image_url);
+  showHomepageImagePreview("promo", settings.homepage_promo_image_url);
+  setStatus("#homepageContentStatus", "Konten halaman utama berhasil dimuat.");
+}
+
+async function uploadHomepageImage(type, file) {
+  const extension = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" })[file.type];
+  if (!extension || file.size > 10 * 1024 * 1024) throw new Error("Gunakan gambar JPG, PNG, WebP, atau AVIF maksimal 10 MB.");
+  const path = `homepage/${type}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabaseClient.storage.from("product-images").upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw error;
+  return { path, url: imagePublicUrl(path) };
+}
+
+async function saveHomepageContent() {
+  if (state.spotlightBusy || !supabaseClient) return;
+  const button = $("#saveHomepageContentButton");
+  state.spotlightBusy = true;
+  button.disabled = true;
+  button.textContent = "Menyimpan…";
+  const newlyUploaded = [];
+  try {
+    const launchActive = $("#homepageLaunchActive").checked;
+    const promoActive = $("#homepagePromoActive").checked;
+    const launchTitle = $("#homepageLaunchTitle").value.trim();
+    const launchMessage = $("#homepageLaunchMessage").value.trim();
+    const promoBadge = $("#homepagePromoBadge").value.trim() || "PROMO";
+    const promoTitle = $("#homepagePromoTitle").value.trim();
+    const promoDescription = $("#homepagePromoDescription").value.trim();
+    const launchDate = fromDateTimeLocal($("#homepageLaunchAt").value);
+    const promoStarts = fromDateTimeLocal($("#homepagePromoStartsAt").value);
+    const promoEnds = fromDateTimeLocal($("#homepagePromoEndsAt").value);
+    if (promoStarts && promoEnds && new Date(promoEnds) <= new Date(promoStarts)) throw new Error("Tanggal berakhir harus setelah tanggal mulai promo.");
+    if (launchActive && (!launchTitle || !launchMessage)) throw new Error("Isi nama dan pesan teaser sebelum menampilkannya.");
+    if (promoActive && (!promoTitle || !promoDescription)) throw new Error("Isi judul dan keterangan promo sebelum menampilkannya.");
+
+    let launchImage = $("#homepageLaunchImageUrl").value.trim();
+    let promoImage = $("#homepagePromoImageUrl").value.trim();
+    if (state.spotlightFiles.launch) {
+      const uploaded = await uploadHomepageImage("launch", state.spotlightFiles.launch);
+      newlyUploaded.push(uploaded.path);
+      launchImage = uploaded.url;
+    }
+    if (state.spotlightFiles.promo) {
+      const uploaded = await uploadHomepageImage("promo", state.spotlightFiles.promo);
+      newlyUploaded.push(uploaded.path);
+      promoImage = uploaded.url;
+    }
+    launchImage = safeCampaignUrl(launchImage, { allowEmpty: true });
+    promoImage = safeCampaignUrl(promoImage, { allowEmpty: true });
+    if (launchActive && !launchImage) throw new Error("Tambahkan foto untuk teaser Coming Soon yang aktif.");
+    const payload = {
+      homepage_launch_active: launchActive,
+      homepage_launch_title: launchTitle,
+      homepage_launch_message: launchMessage,
+      homepage_launch_image_url: launchImage,
+      homepage_launch_at: launchDate,
+      homepage_promo_active: promoActive,
+      homepage_promo_badge: promoBadge,
+      homepage_promo_title: promoTitle,
+      homepage_promo_description: promoDescription,
+      homepage_promo_image_url: promoImage,
+      homepage_promo_cta_label: $("#homepagePromoCtaLabel").value.trim() || "Lihat promo",
+      homepage_promo_cta_url: safeCampaignUrl($("#homepagePromoCtaUrl").value || "#produk"),
+      homepage_promo_starts_at: promoStarts,
+      homepage_promo_ends_at: promoEnds,
+    };
+    const { error } = await supabaseClient.from("store_public_settings").update(payload).eq("id", 1);
+    if (error) throw error;
+    const retainedPaths = [
+      storagePathFromPublicUrl(payload.homepage_launch_image_url),
+      storagePathFromPublicUrl(payload.homepage_promo_image_url),
+    ].filter(Boolean);
+    const previousPaths = [
+      storagePathFromPublicUrl(state.homepageSettings?.homepage_launch_image_url),
+      storagePathFromPublicUrl(state.homepageSettings?.homepage_promo_image_url),
+    ].filter((path) => path?.startsWith("homepage/") && !retainedPaths.includes(path));
+    let cleanupNote = "";
+    if (previousPaths.length) {
+      const { error: cleanupError } = await supabaseClient.storage.from("product-images").remove(previousPaths);
+      if (cleanupError) cleanupNote = " Foto lama masih tersimpan di penyimpanan dan dapat dibersihkan nanti.";
+    }
+    state.homepageSettings = payload;
+    $("#homepageLaunchImageUrl").value = launchImage || "";
+    $("#homepagePromoImageUrl").value = promoImage || "";
+    showHomepageImagePreview("launch", launchImage);
+    showHomepageImagePreview("promo", promoImage);
+    state.spotlightFiles = { launch: null, promo: null };
+    $("#homepageLaunchImageFile").value = "";
+    $("#homepagePromoImageFile").value = "";
+    setStatus("#homepageContentStatus", `Sorotan dan promo berhasil disimpan. Muat ulang halaman utama untuk melihat perubahan.${cleanupNote}`);
+  } catch (error) {
+    if (newlyUploaded.length) await supabaseClient.storage.from("product-images").remove(newlyUploaded);
+    setStatus("#homepageContentStatus", `Konten belum tersimpan: ${error.message}`, true);
+  } finally {
+    state.spotlightBusy = false;
+    button.disabled = false;
+    button.textContent = "Simpan konten";
+  }
+}
+
+function handleHomepageImageChange(type, event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type) || file.size > 10 * 1024 * 1024) {
+    setStatus("#homepageContentStatus", "Gunakan gambar JPG, PNG, WebP, atau AVIF maksimal 10 MB.", true);
+    return;
+  }
+  state.spotlightFiles[type] = file;
+  showHomepageImagePreview(type, URL.createObjectURL(file));
+  setStatus("#homepageContentStatus", "Foto siap diunggah saat konten disimpan.");
 }
 
 async function loadMembers() {
@@ -1204,6 +1388,17 @@ $("#orderModal").addEventListener("click", (event) => {
 });
 document.querySelectorAll("[data-admin-view]").forEach((button) => {
   button.addEventListener("click", () => setActiveView(button.dataset.adminView));
+});
+$("#saveHomepageContentButton").addEventListener("click", saveHomepageContent);
+$("#homepageLaunchImageFile").addEventListener("change", (event) => handleHomepageImageChange("launch", event));
+$("#homepagePromoImageFile").addEventListener("change", (event) => handleHomepageImageChange("promo", event));
+$("#homepageLaunchImageUrl").addEventListener("input", (event) => {
+  state.spotlightFiles.launch = null;
+  showHomepageImagePreview("launch", event.target.value.trim());
+});
+$("#homepagePromoImageUrl").addEventListener("input", (event) => {
+  state.spotlightFiles.promo = null;
+  showHomepageImagePreview("promo", event.target.value.trim());
 });
 $("#addProductButton").addEventListener("click", openNewProduct);
 $("#productSearch").addEventListener("input", renderProducts);

@@ -48,6 +48,41 @@ let catalogReloadTimer = null;
 let bestsellerProductIds = [];
 let bestsellerLoadFailed = false;
 let activeSpotlight = "new";
+let homepageSpotlightSettings = null;
+
+const spotlightSettingColumns = "homepage_launch_active, homepage_launch_title, homepage_launch_message, homepage_launch_image_url, homepage_launch_at, homepage_promo_active, homepage_promo_badge, homepage_promo_title, homepage_promo_description, homepage_promo_image_url, homepage_promo_cta_label, homepage_promo_cta_url, homepage_promo_starts_at, homepage_promo_ends_at";
+
+async function loadHomepageSpotlightSettings() {
+  if (!publicSupabaseClient) return;
+  const { data, error } = await publicSupabaseClient.from("store_public_settings")
+    .select(spotlightSettingColumns).eq("id", 1).maybeSingle();
+  if (error) {
+    homepageSpotlightSettings = null;
+    console.warn("Konten sorotan belum tersedia. Pastikan migrasi konten sorotan sudah dijalankan:", error.message);
+  } else {
+    homepageSpotlightSettings = data || null;
+  }
+  renderSpotlight();
+}
+
+function spotlightDateLabel(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeStyle: "short" }).format(date);
+}
+
+function safeSpotlightLink(value, fallback = "#produk") {
+  const text = String(value || "").trim();
+  if (!text) return fallback;
+  if (text.startsWith("#") || (text.startsWith("/") && !text.startsWith("//"))) return text;
+  try {
+    const url = new URL(text, window.location.href);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 function formatRupiah(amount) {
   return amount == null ? "Segera tersedia" : `Rp ${Number(amount).toLocaleString("id-ID")}`;
@@ -91,6 +126,8 @@ function renderSpotlight() {
   const panel = document.querySelector("#spotlightPanel");
   const products = document.querySelector("#spotlightProducts");
   const promo = document.querySelector("#spotlightPromo");
+  const promoEmpty = document.querySelector("#spotlightPromoEmpty");
+  const launch = document.querySelector("#spotlightLaunch");
   const description = document.querySelector("#spotlightDescription");
   if (!panel || !products || !promo || !description) return;
 
@@ -103,15 +140,43 @@ function renderSpotlight() {
   if (activeTab) panel.setAttribute("aria-labelledby", activeTab.id);
 
   if (activeSpotlight === "promo") {
-    description.textContent = "Benefit khusus pelanggan yang bergabung sebagai member Urbann Attier.";
+    const settings = homepageSpotlightSettings;
+    const now = Date.now();
+    const startsAt = settings?.homepage_promo_starts_at ? new Date(settings.homepage_promo_starts_at).getTime() : null;
+    const endsAt = settings?.homepage_promo_ends_at ? new Date(settings.homepage_promo_ends_at).getTime() : null;
+    const isPromoVisible = Boolean(settings?.homepage_promo_active)
+      && (!startsAt || startsAt <= now) && (!endsAt || endsAt > now);
+    description.textContent = "Informasi promo dan benefit khusus pelanggan Urbann Attier.";
     products.hidden = true;
-    promo.hidden = false;
+    launch.hidden = true;
+    promo.hidden = !isPromoVisible;
+    promoEmpty.hidden = isPromoVisible;
+    if (isPromoVisible) {
+      document.querySelector("#spotlightPromoBadge").textContent = settings.homepage_promo_badge || "PROMO";
+      document.querySelector("#spotlightPromoTitle").textContent = settings.homepage_promo_title || "Penawaran istimewa untuk Anda";
+      document.querySelector("#spotlightPromoMessage").textContent = settings.homepage_promo_description || "Lihat informasi promo terbaru dari Urbann Attier.";
+      const promoDate = document.querySelector("#spotlightPromoDate");
+      promoDate.textContent = startsAt || endsAt
+        ? `${startsAt ? `Mulai ${spotlightDateLabel(settings.homepage_promo_starts_at)}` : ""}${startsAt && endsAt ? " · " : ""}${endsAt ? `Berakhir ${spotlightDateLabel(settings.homepage_promo_ends_at)}` : ""}`
+        : "";
+      promoDate.hidden = !promoDate.textContent;
+      const promoLink = document.querySelector("#spotlightPromoLink");
+      promoLink.textContent = settings.homepage_promo_cta_label || "Lihat promo";
+      promoLink.href = safeSpotlightLink(settings.homepage_promo_cta_url);
+      const promoImage = document.querySelector("#spotlightPromoImage");
+      const imageUrl = safeImageUrl(settings.homepage_promo_image_url);
+      promoImage.hidden = !imageUrl;
+      promoImage.src = imageUrl;
+      promoImage.alt = settings.homepage_promo_title || "Gambar promo Urbann Attier";
+    }
     return;
   }
 
   promo.hidden = true;
+  promoEmpty.hidden = true;
   products.hidden = false;
   if (activeSpotlight === "best") {
+    launch.hidden = true;
     description.textContent = "Peringkat dihitung dari jumlah produk pada pesanan yang pembayarannya sudah lunas.";
     if (bestsellerLoadFailed) {
       products.innerHTML = '<p class="produk-empty">Pilihan produk terlaris akan segera hadir.</p>';
@@ -127,6 +192,24 @@ function renderSpotlight() {
     return;
   }
 
+  const launchSettings = homepageSpotlightSettings;
+  const launchAt = launchSettings?.homepage_launch_at ? new Date(launchSettings.homepage_launch_at).getTime() : null;
+  const showLaunch = Boolean(launchSettings?.homepage_launch_active)
+    && (!launchAt || launchAt > Date.now())
+    && Boolean(safeImageUrl(launchSettings?.homepage_launch_image_url));
+  if (showLaunch) {
+    description.textContent = "Intip koleksi berikutnya yang sedang disiapkan untuk Anda.";
+    products.hidden = true;
+    launch.hidden = false;
+    document.querySelector("#spotlightLaunchImage").src = safeImageUrl(launchSettings.homepage_launch_image_url);
+    document.querySelector("#spotlightLaunchImage").alt = launchSettings.homepage_launch_title || "Teaser produk yang segera hadir";
+    document.querySelector("#spotlightLaunchTitle").textContent = launchSettings.homepage_launch_title || "Koleksi baru segera hadir";
+    document.querySelector("#spotlightLaunchMessage").textContent = launchSettings.homepage_launch_message || "Kami sedang menyiapkan sesuatu yang istimewa.";
+    const launchDate = document.querySelector("#spotlightLaunchDate");
+    launchDate.textContent = launchAt ? `Dijadwalkan hadir ${spotlightDateLabel(launchSettings.homepage_launch_at)}` : "Segera hadir";
+    return;
+  }
+  launch.hidden = true;
   description.textContent = "Koleksi terbaru yang ditambahkan ke katalog Urbann Attier.";
   const newest = [...produk]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
@@ -232,6 +315,7 @@ function scheduleCatalogRefresh() {
       window.urbannProducts = produk;
       renderProducts(productSearchInput?.value || "");
       await loadBestsellerProductIds();
+      await loadHomepageSpotlightSettings();
       renderSpotlight();
       window.dispatchEvent(new CustomEvent("urbann:catalog-updated", { detail: produk }));
     } catch (error) {
@@ -242,7 +326,7 @@ function scheduleCatalogRefresh() {
 
 function subscribeToCatalogChanges() {
   if (!publicSupabaseClient) return;
-  const tables = ["products", "product_variants", "product_images", "product_sizes", "inventory"];
+  const tables = ["products", "product_variants", "product_images", "product_sizes", "inventory", "store_public_settings"];
   let channel = publicSupabaseClient.channel("urbann-public-catalog");
   tables.forEach((table) => {
     channel = channel.on("postgres_changes", { event: "*", schema: "public", table }, scheduleCatalogRefresh);
@@ -261,6 +345,7 @@ window.URBANN_PRODUCTS_READY = loadCatalog().then((loadedProducts) => {
   renderProducts(productSearchInput?.value || "");
   renderSpotlight();
   loadBestsellerProductIds();
+  loadHomepageSpotlightSettings();
   subscribeToCatalogChanges();
   return produk;
 }).catch((error) => {
@@ -289,3 +374,7 @@ document.querySelectorAll("[data-spotlight-tab]").forEach((button) => {
     renderSpotlight();
   });
 });
+
+window.setInterval(() => {
+  if (activeSpotlight === "promo" || activeSpotlight === "new") renderSpotlight();
+}, 30000);
