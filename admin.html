@@ -51,6 +51,7 @@
             <button class="admin-nav-button" type="button" data-admin-view="orders">Pesanan</button>
             <button class="admin-nav-button" type="button" data-admin-view="members">Data member</button>
             <button class="admin-nav-button" type="button" data-admin-view="spotlight">Sorotan &amp; promo</button>
+            <button class="admin-nav-button" type="button" data-admin-view="email-campaigns">Email promo</button>
             <button class="admin-nav-button" type="button" data-admin-view="products">Produk &amp; stok</button>
           </nav>
           <p class="dashboard-status" id="dashboardStatus" role="status" aria-live="polite"></p>
@@ -186,6 +187,29 @@
                 <p class="dashboard-note">Bagian ini mengatur materi promosi yang tampil. Perubahan harga atau aturan diskon tetap harus diatur pada mekanisme transaksi, bukan hanya lewat teks promo.</p>
               </section>
             </div>
+          </section>
+
+          <section class="admin-page" id="emailCampaignsPage" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">HUBUNGI MEMBER</p>
+                <h1>Email promo</h1>
+                <p class="dashboard-welcome">Email hanya dikirim kepada member terverifikasi yang masih menyetujui informasi promo. Setiap email menyediakan tautan berhenti berlangganan.</p>
+              </div>
+            </div>
+            <p class="products-status" id="promoEmailStatus" role="status" aria-live="polite"></p>
+            <section class="panel promo-email-compose" aria-labelledby="promoEmailComposeTitle">
+              <div class="panel-heading"><p class="eyebrow">BUAT KAMPANYE</p><h2 id="promoEmailComposeTitle">Tulis email untuk member</h2></div>
+              <div class="promo-email-audience"><div><span>Penerima yang saat ini menyetujui</span><strong id="promoEmailRecipientCount">Belum diperiksa</strong></div><button class="button button-small" id="refreshPromoAudienceButton" type="button">Periksa penerima</button></div>
+              <label class="form-field" for="promoEmailSubject"><span>Subjek email</span><input id="promoEmailSubject" maxlength="150" placeholder="Contoh: Koleksi terbaru Urbann Attier sudah hadir" /></label>
+              <label class="form-field" for="promoEmailMessage"><span>Isi email</span><textarea id="promoEmailMessage" rows="8" maxlength="5000" placeholder="Tulis informasi promo atau produk baru untuk member..."></textarea><small>Maksimal 5.000 karakter. Pesan dikirim sebagai teks dan ditata otomatis dengan identitas Urbann Attier.</small></label>
+              <div class="promo-email-actions"><span class="dashboard-note">Klik kirim hanya setelah isi dan jumlah penerima sudah diperiksa.</span><button class="button button-primary" id="sendPromoCampaignButton" type="button" disabled>Kirim email promo</button></div>
+            </section>
+            <section class="panel promo-email-history" aria-labelledby="promoEmailHistoryTitle">
+              <div class="panel-heading"><p class="eyebrow">RIWAYAT</p><h2 id="promoEmailHistoryTitle">Kampanye sebelumnya</h2></div>
+              <div class="table-scroll"><table class="orders-table"><thead><tr><th>Waktu</th><th>Subjek</th><th>Penerima</th><th>Diterima penyedia</th><th>Gagal</th><th>Status</th></tr></thead><tbody id="promoEmailHistoryBody"></tbody></table></div>
+              <p class="empty-state" id="promoEmailHistoryEmpty" hidden>Belum ada kampanye email.</p>
+            </section>
           </section>
 
           <section class="admin-page" id="productsPage" hidden>

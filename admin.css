@@ -446,6 +446,80 @@ tbody tr:last-child td {
 .spotlight-admin-preview[hidden] {
   display: none;
 }
+.promo-email-compose,
+.promo-email-history {
+  margin-top: 18px;
+}
+.promo-email-compose .panel-heading h2,
+.promo-email-history .panel-heading h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.promo-email-compose .form-field {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+}
+.promo-email-compose .form-field > span {
+  font-size: 14px;
+  font-weight: 700;
+}
+.promo-email-compose textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 12px;
+  border: 1px solid #d7d0c5;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+.promo-email-compose input {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d7d0c5;
+  border-radius: 8px;
+  background: #fff;
+}
+.promo-email-compose .form-field small {
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+.promo-email-audience,
+.promo-email-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  background: #faf7f1;
+}
+.promo-email-audience > div {
+  display: grid;
+  gap: 5px;
+}
+.promo-email-audience strong {
+  color: var(--admin-gold-dark);
+  font-size: 21px;
+}
+.promo-email-audience span,
+.promo-email-actions .dashboard-note {
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+.promo-email-actions {
+  margin-top: 18px;
+  background: transparent;
+}
+.promo-email-actions .dashboard-note {
+  margin: 0;
+}
+.promo-email-history .orders-table {
+  min-width: 750px;
+}
 .products-table td {
   vertical-align: middle;
 }
@@ -1065,6 +1139,10 @@ tbody tr:last-child td {
   }
   .spotlight-admin-grid {
     grid-template-columns: 1fr;
+  }
+  .promo-email-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
   .stat-card {
     grid-template-columns: 1fr auto;

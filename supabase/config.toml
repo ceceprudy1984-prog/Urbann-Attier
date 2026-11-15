@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.midtrans-notification]
 verify_jwt = false
+
+[functions.promo-email]
+verify_jwt = false

@@ -14,6 +14,7 @@ Folder ini berisi migrasi Supabase untuk website Urbann Attier. Project yang saa
 8. Jalankan `202611150001_admin_member_directory.sql` untuk mengaktifkan halaman **Data member** pada dashboard. Fungsi database membatasi daftar ini hanya untuk admin aktif dan mengambil email akun tanpa membuka tabel `auth.users` ke frontend publik.
 9. Jalankan `202611150002_storefront_bestsellers.sql` untuk bagian **Terlaris** di halaman utama. Fungsi publik hanya mengembalikan ID produk aktif yang peringkatnya dihitung dari jumlah barang pada pesanan dengan pembayaran lunas; data pelanggan dan rincian pesanan tidak dibuka.
 10. Jalankan `202611150003_homepage_spotlight_content.sql` untuk mengaktifkan pengaturan teaser **Coming Soon** dan kampanye promo di dashboard admin. Admin dapat mengatur teks, gambar, tautan, serta jadwal tampil/sembunyi. Konten promo hanya materi informasi dan tidak mengubah perhitungan diskon transaksi.
+11. Jalankan `202611150004_promo_email_campaigns.sql` untuk membuat catatan kampanye email, token berhenti berlangganan, dan daftar penerima yang hanya dapat dibaca Edge Function. Pelanggan yang belum menyetujui, belum memverifikasi email, atau sudah berhenti berlangganan tidak akan dimasukkan.
 
 ## Menyiapkan login pelanggan
 
@@ -50,5 +51,13 @@ Pesanan dan pembayaran hanya bisa dibaca atau diubah admin melalui kebijakan dat
 5. Setelah menjalankan migrasi akun dan diskon, perbarui/deploy kode Edge Function yang sudah ada bernama `create-midtrans-payment` dari `supabase/functions/create-midtrans-payment/index.ts`. Jangan membuat fungsi baru dengan nama berbeda; checkout memanggil slug tersebut. Deploy perubahan file website (`checkout.js`, `checkout.html`, `akun.js`, `admin.js`, `index.html`, dan `style.css`) bersamaan agar login checkout, nominal Midtrans, dan invoice menampilkan aturan yang sama.
 
 API key RajaOngkir hanya disimpan sebagai secret server. Jangan menyalinnya ke `supabase-config.js`, JavaScript halaman, atau GitHub. API Shipping Cost RajaOngkir menghitung tarif live; respons dan ketersediaan layanan dapat berbeda sesuai rute dan kurir.
+
+## Kampanye email promo
+
+1. Buat akun Resend, verifikasi domain pengirim, lalu siapkan API key untuk pengiriman. Pengiriman produksi memerlukan alamat `from` dari domain yang sudah diverifikasi.
+2. Di **Supabase → Edge Functions → Secrets**, simpan `RESEND_API_KEY` dan `PROMO_FROM_EMAIL` (contoh format nilai: `Urbann Attier <promo@domain-anda>`). Jangan simpan API key di kode atau GitHub.
+3. Deploy Edge Function `promo-email` dari folder `supabase/functions/promo-email`. Fungsi memvalidasi sesi admin sendiri, mengirim per penerima melalui batch berukuran maksimal 100 email per permintaan provider, mencatat ringkasan hasil, dan menyediakan tautan serta header one-click berhenti berlangganan.
+4. Pada dashboard, buka **Email promo**, periksa jumlah penerima, isi subjek/pesan, lalu tekan **Kirim email promo** dan konfirmasi. Daftar penerima dihitung ulang di server saat pengiriman; setiap email dikirim hanya kepada alamat yang terverifikasi dan masih menyetujui promosi.
+5. Email kampanye memakai kuota pengiriman transactional API Resend. Uji pertama kali dengan jumlah kecil dan alamat milik sendiri sebelum mengirim kampanye lebih luas.
 
 Bagian sorotan halaman utama menampilkan tiga produk terbaru berdasarkan waktu produk ditambahkan dan tiga produk terlaris berdasarkan jumlah item dari pesanan lunas. Setelah migrasi `202611150003_homepage_spotlight_content.sql` dijalankan, admin dapat mengatur teaser Coming Soon dan kampanye promo beserta jadwalnya dari tab **Sorotan & promo**. Jika tidak ada promo yang aktif, halaman menampilkan ajakan untuk bergabung sebagai member. Teks promo tidak mengubah harga atau diskon checkout.

@@ -28,6 +28,8 @@ const state = {
   spotlightFiles: { launch: null, promo: null },
   spotlightBusy: false,
   homepageSettings: null,
+  promoAudienceCount: null,
+  promoEmailBusy: false,
   busy: false,
 };
 
@@ -186,6 +188,7 @@ function setActiveView(viewName) {
   $("#ordersPage").hidden = viewName !== "orders";
   $("#membersPage").hidden = viewName !== "members";
   $("#spotlightAdminPage").hidden = viewName !== "spotlight";
+  $("#emailCampaignsPage").hidden = viewName !== "email-campaigns";
   $("#productsPage").hidden = viewName !== "products";
   document.querySelectorAll("[data-admin-view]").forEach((button) => {
     const active = button.dataset.adminView === viewName;
@@ -196,6 +199,105 @@ function setActiveView(viewName) {
   if (viewName === "orders") loadOrders();
   if (viewName === "members") loadMembers();
   if (viewName === "spotlight") loadHomepageContent();
+  if (viewName === "email-campaigns") {
+    loadPromoEmailAudience();
+    loadPromoEmailHistory();
+  }
+}
+
+async function invokePromoEmailFunction(body) {
+  const { data, error } = await supabaseClient.functions.invoke("promo-email", { body });
+  if (!error) return data;
+  let message = error.message || "Permintaan email promo gagal.";
+  try {
+    const response = error.context;
+    const details = response?.json ? await response.json() : null;
+    if (details?.error) message = details.error;
+  } catch { /* use the function client's message */ }
+  throw new Error(message);
+}
+
+function updatePromoEmailSendState() {
+  const hasContent = Boolean($("#promoEmailSubject").value.trim() && $("#promoEmailMessage").value.trim());
+  $("#sendPromoCampaignButton").disabled = state.promoEmailBusy || !hasContent || !state.promoAudienceCount;
+}
+
+async function loadPromoEmailAudience() {
+  if (!supabaseClient || state.promoEmailBusy) return;
+  state.promoAudienceCount = null;
+  $("#promoEmailRecipientCount").textContent = "Memeriksa…";
+  updatePromoEmailSendState();
+  setStatus("#promoEmailStatus", "Memeriksa jumlah penerima yang menyetujui email promo…");
+  try {
+    const result = await invokePromoEmailFunction({ action: "preview" });
+    state.promoAudienceCount = Number(result?.recipientCount || 0);
+    $("#promoEmailRecipientCount").textContent = `${state.promoAudienceCount.toLocaleString("id-ID")} member`;
+    setStatus("#promoEmailStatus", state.promoAudienceCount
+      ? "Jumlah penerima dihitung dari persetujuan aktif dan email yang sudah terverifikasi."
+      : "Belum ada member terverifikasi yang menyetujui email promo.");
+  } catch (error) {
+    $("#promoEmailRecipientCount").textContent = "Belum tersedia";
+    setStatus("#promoEmailStatus", `Daftar penerima belum dapat diperiksa: ${error.message}. Pastikan migrasi dan Edge Function promo-email sudah diterapkan.`, true);
+  }
+  updatePromoEmailSendState();
+}
+
+function formatDateTime(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+async function loadPromoEmailHistory() {
+  if (!supabaseClient) return;
+  try {
+    const result = await invokePromoEmailFunction({ action: "history" });
+    const campaigns = result?.campaigns || [];
+    const statusLabels = { sending: "Sedang diproses", sent: "Selesai", partial: "Sebagian gagal", failed: "Gagal" };
+    $("#promoEmailHistoryBody").innerHTML = campaigns.map((campaign) => `
+      <tr><td>${escapeHtml(formatDateTime(campaign.created_at))}</td><td>${escapeHtml(campaign.subject)}</td>
+      <td>${Number(campaign.recipient_count || 0)}</td><td>${Number(campaign.sent_count || 0)}</td>
+      <td>${Number(campaign.failed_count || 0)}</td><td>${escapeHtml(statusLabels[campaign.status] || campaign.status)}</td></tr>`).join("");
+    $("#promoEmailHistoryEmpty").hidden = campaigns.length > 0;
+  } catch (error) {
+    $("#promoEmailHistoryBody").innerHTML = "";
+    $("#promoEmailHistoryEmpty").hidden = false;
+    setStatus("#promoEmailStatus", `Riwayat kampanye belum dapat dimuat: ${error.message}.`, true);
+  }
+}
+
+async function sendPromoCampaign() {
+  if (state.promoEmailBusy) return;
+  const subject = $("#promoEmailSubject").value.trim();
+  const message = $("#promoEmailMessage").value.trim();
+  if (!subject || !message || !state.promoAudienceCount) return;
+  const confirmed = window.confirm(`Kirim email promo “${subject}” kepada sekitar ${state.promoAudienceCount} member yang menyetujui email? Email yang sudah terkirim tidak dapat ditarik kembali.`);
+  if (!confirmed) return;
+
+  state.promoEmailBusy = true;
+  const button = $("#sendPromoCampaignButton");
+  button.textContent = "Mengirim…";
+  updatePromoEmailSendState();
+  setStatus("#promoEmailStatus", "Mengirim kampanye. Jangan tutup halaman sampai hasil pengiriman tampil.");
+  try {
+    const result = await invokePromoEmailFunction({ action: "send", subject, message });
+    $("#promoEmailRecipientCount").textContent = `${Number(result.recipientCount || 0).toLocaleString("id-ID")} member`;
+    state.promoAudienceCount = Number(result.recipientCount || 0);
+    if (result.status === "sent") {
+      setStatus("#promoEmailStatus", `Email diterima layanan pengiriman untuk ${result.sentCount} dari ${result.recipientCount} penerima. Status ini berarti email diterima untuk diproses penyedia, bukan jaminan sudah masuk kotak masuk.`);
+    } else {
+      setStatus("#promoEmailStatus", `Pengiriman selesai sebagian: ${result.sentCount} diterima penyedia, ${result.failedCount} gagal. ${result.detail || "Periksa riwayat sebelum mencoba lagi."}`, true);
+    }
+    $("#promoEmailSubject").value = "";
+    $("#promoEmailMessage").value = "";
+    await loadPromoEmailHistory();
+  } catch (error) {
+    setStatus("#promoEmailStatus", `Kampanye belum berhasil diproses: ${error.message}`, true);
+  } finally {
+    state.promoEmailBusy = false;
+    button.textContent = "Kirim email promo";
+    updatePromoEmailSendState();
+  }
 }
 
 const homepageContentColumns = "homepage_launch_active, homepage_launch_title, homepage_launch_message, homepage_launch_image_url, homepage_launch_at, homepage_promo_active, homepage_promo_badge, homepage_promo_title, homepage_promo_description, homepage_promo_image_url, homepage_promo_cta_label, homepage_promo_cta_url, homepage_promo_starts_at, homepage_promo_ends_at";
@@ -1346,6 +1448,10 @@ $("#refreshOrdersButton").addEventListener("click", async () => {
   }
 });
 $("#refreshMembersButton").addEventListener("click", loadMembers);
+$("#refreshPromoAudienceButton").addEventListener("click", loadPromoEmailAudience);
+$("#sendPromoCampaignButton").addEventListener("click", sendPromoCampaign);
+$("#promoEmailSubject").addEventListener("input", updatePromoEmailSendState);
+$("#promoEmailMessage").addEventListener("input", updatePromoEmailSendState);
 $("#memberSearch").addEventListener("input", () => {
   window.clearTimeout(state.membersSearchTimer);
   state.membersSearchTimer = window.setTimeout(() => {
