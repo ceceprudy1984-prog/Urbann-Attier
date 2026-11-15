@@ -9,6 +9,12 @@ const state = {
   user: null,
   products: [],
   orders: [],
+  members: [],
+  membersTotal: 0,
+  membersOffset: 0,
+  membersPageSize: 50,
+  membersRequestId: 0,
+  membersSearchTimer: null,
   ordersFilter: "all",
   orderChannel: null,
   orderRefreshTimer: null,
@@ -175,6 +181,7 @@ function renderSelectedImageFiles() {
 function setActiveView(viewName) {
   $("#overviewPage").hidden = viewName !== "overview";
   $("#ordersPage").hidden = viewName !== "orders";
+  $("#membersPage").hidden = viewName !== "members";
   $("#productsPage").hidden = viewName !== "products";
   document.querySelectorAll("[data-admin-view]").forEach((button) => {
     const active = button.dataset.adminView === viewName;
@@ -183,6 +190,61 @@ function setActiveView(viewName) {
   });
   if (viewName === "products") loadProducts();
   if (viewName === "orders") loadOrders();
+  if (viewName === "members") loadMembers();
+}
+
+async function loadMembers() {
+  if (!supabaseClient) return;
+  const requestId = ++state.membersRequestId;
+  const search = $("#memberSearch").value.trim();
+  const consentValue = $("#memberConsentFilter").value;
+  const consent = consentValue === "yes" ? true : consentValue === "no" ? false : null;
+  setStatus("#membersStatus", "Memuat data member…");
+  $("#previousMembersPage").disabled = true;
+  $("#nextMembersPage").disabled = true;
+
+  const { data, error } = await supabaseClient.rpc("admin_list_customer_members", {
+    p_search: search || null,
+    p_marketing_opt_in: consent,
+    p_limit: state.membersPageSize,
+    p_offset: state.membersOffset,
+  });
+  if (requestId !== state.membersRequestId) return;
+  if (error) {
+    state.members = [];
+    state.membersTotal = 0;
+    renderMembers();
+    setStatus("#membersStatus", `Data member gagal dimuat: ${error.message}. Pastikan migrasi data member sudah dijalankan.`, true);
+    return;
+  }
+
+  state.members = data || [];
+  state.membersTotal = Number(state.members[0]?.total_count || 0);
+  renderMembers();
+  setStatus("#membersStatus", "Data member berhasil diperbarui.");
+}
+
+function renderMembers() {
+  const rows = state.members.map((member) => `
+    <tr>
+      <td><strong>${escapeHtml(member.full_name || "Nama belum diisi")}</strong><small>${escapeHtml(member.email || "Email tidak tersedia")}</small></td>
+      <td>${escapeHtml(member.phone || "Belum diisi")}</td>
+      <td>${formatDate(member.created_at)}</td>
+      <td><span class="status-pill ${member.email_confirmed ? "is-on" : "is-pending"}">${member.email_confirmed ? "Terverifikasi" : "Belum"}</span></td>
+      <td><span class="status-pill ${member.email_marketing_opt_in ? "is-on" : "is-off"}">${member.email_marketing_opt_in ? "Bersedia" : "Tidak bersedia"}</span>${member.email_marketing_opt_in && member.email_marketing_opted_in_at ? `<small>Disetujui ${formatDate(member.email_marketing_opted_in_at)}</small>` : ""}</td>
+      <td>${Number(member.order_count || 0)} total<small>${Number(member.paid_order_count || 0)} lunas</small></td>
+      <td>${Number(member.discount_tokens_used || 0)} terpakai · ${Number(member.discount_tokens_reserved || 0)} ditahan<small>Sisa ${Number(member.discount_tokens_remaining ?? 5)} dari 5</small></td>
+    </tr>`).join("");
+
+  $("#membersBody").innerHTML = rows;
+  $("#membersEmpty").hidden = state.members.length > 0;
+  const start = state.membersTotal ? state.membersOffset + 1 : 0;
+  const end = Math.min(state.membersOffset + state.members.length, state.membersTotal);
+  $("#membersPageSummary").textContent = state.membersTotal
+    ? `Menampilkan ${start}-${end} dari ${state.membersTotal} member`
+    : "Belum ada member yang cocok.";
+  $("#previousMembersPage").disabled = state.membersOffset <= 0;
+  $("#nextMembersPage").disabled = state.membersOffset + state.membersPageSize >= state.membersTotal;
 }
 
 async function confirmAdmin(user) {
@@ -1097,6 +1159,28 @@ $("#refreshOrdersButton").addEventListener("click", async () => {
     await Promise.all([loadOrders(), loadOverview()]);
   } catch (error) {
     setStatus("#ordersStatus", `Pesanan gagal diperbarui: ${error.message}`, true);
+  }
+});
+$("#refreshMembersButton").addEventListener("click", loadMembers);
+$("#memberSearch").addEventListener("input", () => {
+  window.clearTimeout(state.membersSearchTimer);
+  state.membersSearchTimer = window.setTimeout(() => {
+    state.membersOffset = 0;
+    loadMembers();
+  }, 250);
+});
+$("#memberConsentFilter").addEventListener("change", () => {
+  state.membersOffset = 0;
+  loadMembers();
+});
+$("#previousMembersPage").addEventListener("click", () => {
+  state.membersOffset = Math.max(0, state.membersOffset - state.membersPageSize);
+  loadMembers();
+});
+$("#nextMembersPage").addEventListener("click", () => {
+  if (state.membersOffset + state.membersPageSize < state.membersTotal) {
+    state.membersOffset += state.membersPageSize;
+    loadMembers();
   }
 });
 $("#orderSearch").addEventListener("input", renderOrders);

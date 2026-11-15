@@ -303,6 +303,7 @@ tbody tr:last-child td {
 
 .admin-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 26px;
   padding-bottom: 12px;
@@ -369,6 +370,42 @@ tbody tr:last-child td {
   color: var(--admin-ink);
   background: #fff;
   font: inherit;
+}
+.members-table {
+  min-width: 1120px;
+}
+.members-table th,
+.members-table td {
+  white-space: normal;
+  vertical-align: top;
+}
+.members-table td:first-child {
+  min-width: 205px;
+}
+.members-table td:nth-child(2) {
+  min-width: 130px;
+}
+.members-table td:nth-child(7) {
+  min-width: 180px;
+}
+.members-table td small {
+  display: block;
+  margin-top: 4px;
+  color: var(--admin-muted);
+  line-height: 1.45;
+}
+.members-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+.members-pagination > div {
+  display: flex;
+  gap: 8px;
 }
 .products-table td {
   vertical-align: middle;
@@ -1018,6 +1055,10 @@ tbody tr:last-child td {
   }
   .orders-filters select {
     width: 100%;
+  }
+  .members-pagination {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .modal-backdrop {
     align-items: start;
