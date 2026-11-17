@@ -44,6 +44,7 @@ function showDashboard(user) {
   $("#loginView").hidden = true;
   $("#dashboardView").hidden = false;
   $("#adminWelcome").textContent = `Masuk sebagai ${user.email || "admin"}`;
+  $("#currentAdminEmail").value = user.email || "";
 }
 
 function formatRupiah(value) {
@@ -1554,6 +1555,37 @@ async function handleLogout() {
   showLogin("Anda sudah keluar.");
 }
 
+function closeEmailSettings() {
+  $("#emailSettingsModal").hidden = true;
+  $("#emailSettingsForm").reset();
+  setStatus("#emailSettingsStatus", "");
+}
+
+async function handleAdminEmailChange(event) {
+  event.preventDefault();
+  if (!state.user) return;
+  const newEmail = $("#newAdminEmail").value.trim();
+  if (!newEmail) return;
+  if (newEmail.toLowerCase() === String(state.user.email || "").toLowerCase()) {
+    setStatus("#emailSettingsStatus", "Email baru sama dengan email yang sedang digunakan.", true);
+    return;
+  }
+
+  const button = $("#saveAdminEmailButton");
+  button.disabled = true;
+  setStatus("#emailSettingsStatus", "Mengirim tautan konfirmasi…");
+  try {
+    const emailRedirectTo = new URL("admin.html?email_updated=1", window.location.href).href;
+    const { error } = await supabaseClient.auth.updateUser({ email: newEmail }, { emailRedirectTo });
+    if (error) throw error;
+    setStatus("#emailSettingsStatus", "Tautan konfirmasi dikirim ke email lama dan email baru. Buka keduanya untuk menyelesaikan pergantian alamat.");
+  } catch (error) {
+    setStatus("#emailSettingsStatus", error.message || "Permintaan perubahan email belum berhasil. Silakan coba lagi.", true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function initialize() {
   if (!hasConfig) {
     showLogin("Isi Project URL dan Publishable key di supabase-config.js.");
@@ -1573,6 +1605,17 @@ async function initialize() {
 $("#loginForm").addEventListener("submit", handleLogin);
 $("#adminForgotPasswordButton").addEventListener("click", handleAdminPasswordRecovery);
 $("#logoutButton").addEventListener("click", handleLogout);
+$("#openEmailSettingsButton").addEventListener("click", () => {
+  $("#currentAdminEmail").value = state.user?.email || "";
+  $("#emailSettingsModal").hidden = false;
+  $("#newAdminEmail").focus();
+});
+$("#closeEmailSettingsButton").addEventListener("click", closeEmailSettings);
+$("#cancelEmailSettingsButton").addEventListener("click", closeEmailSettings);
+$("#emailSettingsModal").addEventListener("click", (event) => {
+  if (event.target === $("#emailSettingsModal")) closeEmailSettings();
+});
+$("#emailSettingsForm").addEventListener("submit", handleAdminEmailChange);
 $("#refreshButton").addEventListener("click", async () => {
   setStatus("#dashboardStatus", "Memuat ulang data…");
   try {

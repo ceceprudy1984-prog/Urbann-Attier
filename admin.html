@@ -42,6 +42,7 @@
           </a>
           <div class="admin-header-actions">
             <span class="admin-badge">Admin</span>
+            <button class="button button-quiet" id="openEmailSettingsButton" type="button">Ganti email</button>
             <button class="button button-quiet" id="logoutButton" type="button">Keluar</button>
           </div>
         </header>
@@ -323,6 +324,30 @@
             <p class="order-workflow-note" id="orderWorkflowNote">Saat transfer sudah dicek sukses, pilih Lunas. Pesanan otomatis berpindah ke Diproses. Setelah status berubah dan tersimpan, WhatsApp akan disiapkan dengan pesan untuk pelanggan; admin tetap menekan Kirim. Membatalkan pesanan akan mengembalikan stok secara otomatis. Invoice A6 mencetak data pesanan yang sudah tersimpan; simpan perubahan terlebih dahulu.</p>
             <p class="form-status product-form-status" id="orderFormStatus" role="status" aria-live="polite"></p>
             <div class="modal-actions order-modal-actions"><button class="button button-quiet" id="cancelOrderEdit" type="button">Tutup</button><button class="button button-quiet" id="printOrderInvoice" type="button">Cetak invoice A6</button><button class="button button-primary" id="saveOrderButton" type="submit">Simpan perubahan</button></div>
+          </form>
+        </section>
+      </div>
+      <div class="modal-backdrop" id="emailSettingsModal" hidden>
+        <section class="product-modal email-settings-modal" role="dialog" aria-modal="true" aria-labelledby="emailSettingsTitle">
+          <div class="modal-header">
+            <div><p class="eyebrow">AKUN ADMIN</p><h2 id="emailSettingsTitle">Ganti email login</h2></div>
+            <button class="modal-close" id="closeEmailSettingsButton" type="button" aria-label="Tutup pengaturan email">&times;</button>
+          </div>
+          <form id="emailSettingsForm" class="product-form">
+            <div class="form-field">
+              <label for="currentAdminEmail">Email saat ini</label>
+              <input id="currentAdminEmail" type="email" readonly />
+            </div>
+            <div class="form-field">
+              <label for="newAdminEmail">Email baru</label>
+              <input id="newAdminEmail" type="email" autocomplete="email" required />
+            </div>
+            <p class="order-workflow-note">Supabase akan mengirim tautan konfirmasi ke email lama dan email baru. Perubahan berlaku setelah keduanya dikonfirmasi. Hak admin tetap terhubung ke akun ini.</p>
+            <p class="form-status product-form-status" id="emailSettingsStatus" role="status" aria-live="polite"></p>
+            <div class="modal-actions">
+              <button class="button button-quiet" id="cancelEmailSettingsButton" type="button">Batal</button>
+              <button class="button button-primary" id="saveAdminEmailButton" type="submit">Kirim konfirmasi</button>
+            </div>
           </form>
         </section>
       </div>
