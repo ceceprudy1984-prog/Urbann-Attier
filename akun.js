@@ -68,24 +68,49 @@ function friendlyAuthError(error) {
   return message || "Permintaan belum berhasil. Silakan coba lagi.";
 }
 
+function recoveryRedirectError() {
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const code = params.get("error_code") || "";
+  if (code === "otp_expired") {
+    return "Tautan pemulihan sudah kedaluwarsa atau pernah dibuka. Minta tautan baru, lalu gunakan tautan paling baru satu kali saja.";
+  }
+  if (params.get("error")) {
+    return "Tautan pemulihan tidak dapat digunakan. Minta tautan baru dan pastikan halaman akun sedang berjalan saat membukanya.";
+  }
+  return "";
+}
+
 async function loadCustomerProfile(session) {
   authPanel.hidden = true;
   profilePanel.hidden = false;
   document.getElementById("profileEmail").textContent = session.user.email || "";
   setStatus(profileStatus, "Memuat pengaturan akun…");
 
-  const { data, error } = await accountClient
-    .from("customer_profiles")
-    .select("email_marketing_opt_in")
-    .eq("user_id", session.user.id)
-    .maybeSingle();
+  const { data, error } = await accountClient.rpc("get_customer_account_summary");
 
   if (error) {
-    setStatus(profileStatus, "Pengaturan akun belum dapat dimuat. Pastikan migrasi akun pelanggan sudah diterapkan.", true);
+    setStatus(profileStatus, "Informasi member belum dapat dimuat. Pastikan migrasi profil akun member sudah diterapkan.", true);
     return;
   }
 
-  document.getElementById("profileEmailConsent").checked = Boolean(data?.email_marketing_opt_in);
+  const summary = data || {};
+  document.getElementById("profileFullName").value = summary.full_name || "";
+  document.getElementById("profilePhone").value = summary.phone || "";
+  document.getElementById("profileAddressLine").value = summary.address_line || "";
+  document.getElementById("profileDistrict").value = summary.district || "";
+  document.getElementById("profileCity").value = summary.city || "";
+  document.getElementById("profileProvince").value = summary.province || "";
+  document.getElementById("profilePostalCode").value = summary.postal_code || "";
+  document.getElementById("profileEmailConsent").checked = Boolean(summary.email_marketing_opt_in);
+  document.getElementById("memberStatusBadge").textContent = summary.email_verified ? "Member terverifikasi" : "Verifikasi email diperlukan";
+  document.getElementById("profileEmailVerified").textContent = summary.email_verified ? "Email terverifikasi" : "Email belum terverifikasi";
+  document.getElementById("profileEmailVerified").classList.toggle("is-unverified", !summary.email_verified);
+  document.getElementById("memberSince").textContent = summary.created_at
+    ? `Bergabung sejak ${new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date(summary.created_at))}`
+    : "Selamat datang di keanggotaan Urbann Attier.";
+  document.getElementById("discountTokensRemaining").textContent = Number(summary.discount_tokens_remaining ?? 5).toLocaleString("id-ID");
+  document.getElementById("discountTokensUsed").textContent = Number(summary.discount_tokens_used || 0).toLocaleString("id-ID");
+  document.getElementById("discountTokensReserved").textContent = Number(summary.discount_tokens_reserved || 0).toLocaleString("id-ID");
   setStatus(profileStatus);
 }
 
@@ -94,6 +119,13 @@ async function handleAuthState(event, session) {
   const returnToCheckout = new URLSearchParams(window.location.search).get("return") === "checkout";
   if (event === "PASSWORD_RECOVERY") {
     showMode("new-password");
+    return;
+  }
+  const recoveryError = recoveryRedirectError();
+  if (recoveryError) {
+    showMode("login");
+    setStatus(accountStatus, recoveryError, true);
+    window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}`);
     return;
   }
   if (session?.user) {
@@ -244,6 +276,33 @@ preferenceForm.addEventListener("submit", async (event) => {
   setStatus(profileStatus, error
     ? "Pilihan belum tersimpan. Pastikan migrasi akun pelanggan sudah diterapkan."
     : "Pilihan email promosi berhasil disimpan.", Boolean(error));
+});
+
+document.getElementById("profileDetailsForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!accountClient) return;
+  const form = new FormData(event.currentTarget);
+  const button = document.getElementById("saveProfileButton");
+  button.disabled = true;
+  setStatus(profileStatus, "Menyimpan informasi profil…");
+  try {
+    const { error } = await accountClient.rpc("update_customer_account_profile", {
+      p_full_name: String(form.get("fullName") || "").trim(),
+      p_phone: String(form.get("phone") || "").trim(),
+      p_address_line: String(form.get("addressLine") || "").trim(),
+      p_district: String(form.get("district") || "").trim(),
+      p_city: String(form.get("city") || "").trim(),
+      p_province: String(form.get("province") || "").trim(),
+      p_postal_code: String(form.get("postalCode") || "").trim(),
+    });
+    setStatus(profileStatus, error
+      ? `Informasi profil belum tersimpan: ${error.message}`
+      : "Informasi profil berhasil disimpan.", Boolean(error));
+  } catch (error) {
+    setStatus(profileStatus, `Informasi profil belum tersimpan: ${friendlyAuthError(error)}`, true);
+  } finally {
+    button.disabled = false;
+  }
 });
 
 document.getElementById("logoutButton").addEventListener("click", async () => {

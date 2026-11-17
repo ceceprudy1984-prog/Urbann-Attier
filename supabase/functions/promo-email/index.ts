@@ -2,7 +2,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, list-unsubscribe-post",
+  // Keep in sync with current supabase-js browser preflight headers.
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, list-unsubscribe-post, traceparent, tracestate, baggage",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Content-Type": "application/json; charset=utf-8",
 };
@@ -22,6 +23,23 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[char] || char);
+}
+
+function validateEmailWebUrl(value: string, label: string, maxLength: number) {
+  if (!value) return null;
+  if (value.length > maxLength) throw new Error(`${label} terlalu panjang.`);
+  let url: URL;
+  try { url = new URL(value); } catch { throw new Error(`${label} harus berupa alamat website lengkap.`); }
+  if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) {
+    throw new Error(`${label} harus berupa alamat website http:// atau https:// yang valid.`);
+  }
+  return url.href;
+}
+
+function messageHtmlWithLinks(value: string) {
+  return escapeHtml(value)
+    .replace(/(https?:\/\/[^\s<]+)/gi, (url) => `<a href="${url}" style="color:#74132b;text-decoration:underline">${url}</a>`)
+    .replace(/\r?\n/g, "<br>");
 }
 
 function unsubscribePage(message: string, actionUrl = "") {
@@ -114,8 +132,13 @@ Deno.serve(async (request) => {
     if (action !== "send") return jsonResponse({ error: "Aksi kampanye tidak dikenali." }, 400);
     const subject = String(body?.subject || "").trim();
     const message = String(body?.message || "").trim();
+    const imageUrl = validateEmailWebUrl(String(body?.imageUrl || "").trim(), "Alamat gambar", 2000);
+    const buttonText = String(body?.buttonText || "").trim();
+    const buttonUrl = validateEmailWebUrl(String(body?.buttonUrl || "").trim(), "Alamat tujuan tombol", 2000);
     if (subject.length < 1 || subject.length > 150) return jsonResponse({ error: "Subjek harus berisi 1–150 karakter." }, 400);
     if (message.length < 1 || message.length > 5000) return jsonResponse({ error: "Isi email harus berisi 1–5.000 karakter." }, 400);
+    if (buttonText.length > 80) return jsonResponse({ error: "Teks tombol maksimal 80 karakter." }, 400);
+    if (Boolean(buttonText) !== Boolean(buttonUrl)) return jsonResponse({ error: "Teks tombol dan alamat tujuan harus diisi bersama-sama." }, 400);
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const from = Deno.env.get("PROMO_FROM_EMAIL");
@@ -129,13 +152,22 @@ Deno.serve(async (request) => {
       created_by: user.id,
       subject,
       message,
+      image_url: imageUrl,
+      button_text: buttonText || null,
+      button_url: buttonUrl,
       recipient_count: recipients.length,
       status: "sending",
     }).select("id").single();
     if (insertError) throw insertError;
 
     const endpoint = `${serviceUrl.replace(/\/$/, "")}/functions/v1/promo-email`;
-    const messageHtml = escapeHtml(message).replace(/\r?\n/g, "<br>");
+    const formattedMessageHtml = messageHtmlWithLinks(message);
+    const imageHtml = imageUrl
+      ? `<p style="margin:24px 0;text-align:center"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(subject)}" style="display:block;width:100%;max-width:600px;height:auto;margin:0 auto;border:0;border-radius:10px"></p>`
+      : "";
+    const buttonHtml = buttonText && buttonUrl
+      ? `<p style="margin:28px 0;text-align:center"><a href="${escapeHtml(buttonUrl)}" style="display:inline-block;padding:13px 22px;border-radius:8px;background:#74132b;color:#ffffff;font-weight:bold;text-decoration:none">${escapeHtml(buttonText)}</a></p>`
+      : "";
     let sentCount = 0;
     let failedCount = 0;
     const failureMessages: string[] = [];
@@ -145,12 +177,12 @@ Deno.serve(async (request) => {
       const emails = batch.map((recipient) => {
         const unsubscribeUrl = `${endpoint}?action=unsubscribe&token=${encodeURIComponent(recipient.unsubscribe_token)}`;
         const greeting = recipient.full_name ? `Halo ${escapeHtml(recipient.full_name)},` : "Halo,";
-        const textMessage = message;
+        const textMessage = `${message}${buttonUrl ? `\n\n${buttonText}: ${buttonUrl}` : ""}${imageUrl ? `\n\nGambar: ${imageUrl}` : ""}`;
         return {
           from,
           to: [recipient.email],
           subject,
-          html: `<div style="max-width:640px;margin:0 auto;padding:28px 20px;color:#201d18;font:16px/1.7 Arial,sans-serif"><p style="color:#a78043;font:700 14px Georgia,serif">Urbann Attier</p><p>${greeting}</p><p>${messageHtml}</p><hr style="border:0;border-top:1px solid #e8e1d6;margin:28px 0"><p style="color:#77716a;font-size:12px">Anda menerima email ini karena menyetujui informasi promo melalui akun Urbann Attier. <a href="${unsubscribeUrl}">Berhenti berlangganan</a>.</p></div>`,
+          html: `<div style="max-width:640px;margin:0 auto;padding:28px 20px;color:#201d18;font:16px/1.7 Arial,sans-serif"><p style="color:#a78043;font:700 14px Georgia,serif">Urbann Attier</p><p>${greeting}</p>${imageHtml}<p>${formattedMessageHtml}</p>${buttonHtml}<hr style="border:0;border-top:1px solid #e8e1d6;margin:28px 0"><p style="color:#77716a;font-size:12px">Anda menerima email ini karena menyetujui informasi promo melalui akun Urbann Attier. <a href="${unsubscribeUrl}">Berhenti berlangganan</a>.</p></div>`,
           text: `${recipient.full_name ? `Halo ${recipient.full_name},\n\n` : "Halo,\n\n"}${textMessage}\n\nAnda menerima email ini karena menyetujui informasi promo melalui akun Urbann Attier. Berhenti berlangganan: ${unsubscribeUrl}`,
           headers: {
             "List-Unsubscribe": `<${unsubscribeUrl}>`,
@@ -201,7 +233,14 @@ Deno.serve(async (request) => {
       ...(failureMessages.length ? { detail: failureMessages.slice(0, 3).join("; ") } : {}),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Kampanye email belum berhasil diproses.";
+    // Supabase/PostgREST errors are plain objects, not always Error instances.
+    // Preserve their message so admin diagnostics don't collapse into a generic 500.
+    console.error("promo-email request failed:", error);
+    const message = error instanceof Error
+      ? error.message
+      : error && typeof error === "object" && "message" in error
+        ? String((error as { message: unknown }).message)
+        : "Kampanye email belum berhasil diproses.";
     const status = /masuk sebagai admin|sesi admin|akses admin/i.test(message) ? 401 : 500;
     return jsonResponse({ error: message }, status);
   }

@@ -1,51 +1,34 @@
-# Rencana Supabase, Ongkir, dan Payment Gateway — Urbann Attier
+# Status Publikasi Urbann Attier
 
-## Status saat ini
+## Sudah berfungsi di lingkungan uji
 
-- Website dan dashboard admin memakai project Supabase terpisah `urbann attier store`.
-- Versi website yang sudah dipakai masih checkout WhatsApp manual. Sumber kode lokal sekarang sudah disiapkan untuk checkout Midtrans Sandbox, tetapi belum diterapkan ke Supabase dan website.
-- Fungsi RajaOngkir `shipping-rates` telah dibuat dan diuji dari Supabase. Pencarian tujuan dan perhitungan ongkir berjalan; checkout menampilkan tarif sebagai perkiraan dan admin mengonfirmasi biaya akhir.
-- Perubahan status pengiriman otomatis disimpan sebagai rencana lanjutan. Penerapannya memerlukan API pelacakan AWB dan saluran notifikasi pelanggan; dukungan AWB berbeda antar-ekspedisi.
-- Akun Midtrans Sandbox sudah dibuat. `MIDTRANS_SERVER_KEY` dan `MIDTRANS_CLIENT_KEY` sudah ditambahkan ke Supabase Edge Function Secrets.
+- Checkout memakai Midtrans Snap Sandbox dan menghitung ulang produk, stok, ongkir, serta diskon di server.
+- Notifikasi Midtrans sudah berhasil diproses (`HTTP 200`); status pembayaran masuk ke dashboard admin secara otomatis.
+- RajaOngkir menyediakan pencarian wilayah dan perhitungan tarif pengiriman.
+- Halaman akun/member, kuota diskon, invoice, daftar pesanan admin, katalog/stok, dan sorotan halaman utama tersedia.
 
-## Rencana payment gateway
+## Yang harus selesai sebelum menerima pesanan publik
 
-Keputusan awal: **Midtrans Snap, mulai dari Sandbox**. Jangan mengaktifkan transaksi produksi sebelum klien menyetujui alur, akun merchant, biaya, dan metode pembayaran.
+1. **Domain dan hosting:** beli nama domain, pasang website pada hosting, lalu hubungkan DNS dan HTTPS.
+2. **Supabase Auth:** ubah Site URL dan daftar Redirect URL ke alamat publik setelah domain aktif. Uji daftar, login, dan pemulihan kata sandi pada domain tersebut.
+3. **Midtrans produksi:** selesaikan proses merchant Live, pasang kredensial Live di Supabase Secrets, gunakan endpoint Snap Live, dan atur Payment Notification URL Live. Jangan memakai Server Key Sandbox di produksi.
+4. **Keamanan pembayaran:** tambahkan pembatasan penyalahgunaan pada endpoint pembuatan pembayaran sebelum pembayaran sungguhan dibuka untuk umum.
+5. **Pengiriman:** pastikan berat/tagihan ongkir sesuai dengan kebijakan ekspedisi, termasuk kemungkinan berat volume. Sistem saat ini menghitung 500 gram per potong.
+6. **Rilis kode:** tinjau perubahan lokal dan migrasi, commit/push ke GitHub, lalu deploy perubahan website dan Edge Function ke project yang benar.
 
-1. Akun dan kunci Midtrans Sandbox sudah disiapkan; Server Key tidak boleh masuk ke HTML, JavaScript browser, GitHub, atau chat.
-2. Migrasi `202611120001_midtrans_snap_payments.sql` menambahkan reservasi stok terpisah. Stok tersedia untuk pembeli tidak berkurang permanen sebelum pembayaran sukses; reservasi dilepas pada transaksi gagal/kedaluwarsa.
-3. Edge Function `create-midtrans-payment` memeriksa ulang tarif ongkir dari RajaOngkir, menyiapkan order berdasarkan harga database, dan meminta Snap token dari Midtrans.
-4. Edge Function `midtrans-notification` memvalidasi signature dan memproses status pembayaran secara idempoten. Pada pembayaran sukses, reservasi dikonversi menjadi pengurangan stok.
-5. Checkout sudah diarahkan ke Snap Sandbox. Fungsi server dan migrasi belum diterapkan ke Supabase; endpoint notifikasi Midtrans juga belum dikonfigurasi di dashboard.
-6. Setelah penerapan, uji alur berhasil, pending, dibatalkan, kedaluwarsa, notifikasi ganda, dan kegagalan API di Sandbox. Pindah ke kredensial produksi setelah uji dan persetujuan klien.
-7. Sebelum produksi, tambahkan pembatasan penyalahgunaan/rate limit untuk endpoint pembuatan pembayaran yang dapat dipanggil pelanggan tanpa akun.
+## Email promo member — menunggu domain
 
-## Keputusan ongkir untuk checkout gateway
+- Gmail khusus brand dapat dipakai sebagai inbox admin atau alamat balasan, tetapi belum cukup untuk mengautentikasi alamat pengirim Resend.
+- Setelah domain brand dibeli, verifikasi DNS domain di Resend, simpan `RESEND_API_KEY` dan `PROMO_FROM_EMAIL` di Supabase Edge Function Secrets, pastikan migrasi `202611170001_promo_email_media.sql` sudah diterapkan, lalu deploy fungsi `promo-email`.
+- Uji kirim ke alamat milik sendiri terlebih dahulu. Jangan kirim kampanye massal sebelum hasil dan tautan berhenti berlangganan terverifikasi.
 
-- Tarif yang dipilih pelanggan dari RajaOngkir menjadi nilai ongkir yang dibayar; admin tidak mengonfirmasi ulang sebelum pembayaran.
-- Sebelum produksi, pastikan nilai tarif mewakili berat yang benar-benar ditagihkan ekspedisi. Checkout saat ini mengirim berat aktual 500 gram per potong; ukuran paket belum dipakai pada permintaan kalkulasi. Perbedaan berat aktual dan berat volume dapat menimbulkan selisih yang perlu ditanggung toko.
+## Pengembangan lanjutan, bukan syarat rilis awal
 
-## Rencana lanjutan pelacakan pengiriman
+- Pelacakan resi otomatis memerlukan dukungan API tracking dari ekspedisi.
+- WhatsApp otomatis memerlukan WhatsApp Business Platform/API; tautan `wa.me` yang ada menyiapkan pesan untuk dikirim admin secara manual.
 
-- Setelah admin memasukkan kurir dan nomor resi, sistem dapat memeriksa tracking secara berkala dan memperbarui status pesanan.
-- Untuk mengirim pesan WhatsApp otomatis dibutuhkan WhatsApp Business Platform/API atau penyedia resmi; tautan `wa.me` saat ini hanya membuka pesan yang perlu dikirim manual.
-- Periksa dukungan tracking tiap kurir dan paket RajaOngkir sebelum implementasi. Fitur kalkulasi ongkir yang aktif saat ini tidak otomatis membuat resi atau mengambil status perjalanan paket.
+## Catatan keamanan
 
-## Aturan keamanan dan alur bisnis
-
-- Harga, stok, total, dan status pembayaran diputuskan di server/database, bukan berdasarkan data browser.
-- Semua credential provider disimpan di Supabase Edge Function Secrets.
-- Browser hanya menerima data publik dan token Snap yang dibutuhkan untuk membuka UI pembayaran.
-- Notifikasi Midtrans dianggap valid setelah diverifikasi; callback di browser bukan bukti pembayaran.
-- Pembayaran manual tetap diverifikasi admin jika metode tersebut dipertahankan sebagai pilihan.
-- Project Supabase lama yang dipakai website lain tidak boleh diubah atau dijeda.
-
-## Catatan teknis
-
-- Edge Function ongkir: `supabase/functions/shipping-rates/index.ts`.
-- Migrasi estimasi ongkir: `supabase/migrations/202611110001_store_shipping_quotes.sql`.
-- Checkout: `checkout.html` dan `checkout.js`.
-- Skema order/payment dan proses stok saat ini berada pada migrasi `supabase/migrations/202611040001_urbann_attier_initial_schema.sql`, `202611050001_checkout_stock_reservation.sql`, `202611060001_admin_order_workflow.sql`, dan migrasi ongkir.
-- Fungsi baru: `supabase/functions/create-midtrans-payment/index.ts` dan `supabase/functions/midtrans-notification/index.ts`.
-- Migrasi pembayaran: `supabase/migrations/202611120001_midtrans_snap_payments.sql`.
-- Edge Function `midtrans-notification` harus menerima panggilan eksternal Midtrans, sehingga verifikasi JWT Supabase dimatikan untuk endpoint tersebut; signature Midtrans diverifikasi di dalam fungsi.
+- Server Key Midtrans, Service Role Key Supabase, API key RajaOngkir, dan API key Resend hanya disimpan di Supabase Edge Function Secrets; jangan masukkan ke kode browser, GitHub, atau chat.
+- Pembayaran hanya dianggap lunas setelah status resmi diverifikasi server. Callback sukses di browser bukan bukti pembayaran.
+- Jangan mengubah atau menjeda project Supabase lama yang digunakan website lain.

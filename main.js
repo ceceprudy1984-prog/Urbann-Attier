@@ -1,3 +1,21 @@
+// Supabase can fall back to the Site URL if a recovery redirect is missing or
+// rejected. Bring auth errors from the home URL back to the account page.
+const authRedirectParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+const onAccountPage = /(?:^|\/)akun\.html$/.test(window.location.pathname);
+const isPasswordRecoveryRedirect = authRedirectParams.get("type") === "recovery"
+  && (authRedirectParams.has("access_token") || authRedirectParams.has("token_hash"));
+if (!onAccountPage && isPasswordRecoveryRedirect) {
+  const accountUrl = new URL("akun.html", window.location.href);
+  accountUrl.searchParams.set("mode", "new-password");
+  accountUrl.hash = window.location.hash.slice(1);
+  window.location.replace(accountUrl.href);
+} else if (!onAccountPage && (authRedirectParams.has("error") || authRedirectParams.has("error_code"))) {
+  const accountUrl = new URL("akun.html", window.location.href);
+  accountUrl.searchParams.set("mode", "login");
+  accountUrl.hash = window.location.hash.slice(1);
+  window.location.replace(accountUrl.href);
+}
+
 const hamburger = document.querySelector(".hamburger-btn");
 const navLinks = document.querySelector(".nav-links");
 let BIAYA_PENGEMASAN = 5000;

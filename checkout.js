@@ -24,6 +24,7 @@ let checkoutSubtotal = 0;
 let allPricesAvailable = false;
 let checkoutAuthReady = false;
 let checkoutMemberSession = null;
+let paymentRetryAvailable = false;
 let serverPaymentSummary = null;
 
 function escapeCheckoutHtml(value) {
@@ -102,8 +103,10 @@ function updateOrderButton() {
     checkoutWhatsAppButton.textContent = "Pilih layanan pengiriman";
   } else if (!stockCheck.ok && !hasPendingCheckout) {
     checkoutWhatsAppButton.textContent = "Periksa stok keranjang";
+  } else if (paymentRetryAvailable) {
+    checkoutWhatsAppButton.textContent = "Pilih metode pembayaran lain";
   } else {
-    checkoutWhatsAppButton.textContent = "Bayar dengan Midtrans";
+    checkoutWhatsAppButton.textContent = "Bayar sekarang";
   }
 
   if (!stockCheck.ok) {
@@ -534,6 +537,7 @@ recipientForm?.addEventListener("submit", async (event) => {
   const { token } = getCheckoutToken(fingerprint);
 
   checkoutWhatsAppButton.disabled = true;
+  paymentRetryAvailable = false;
   checkoutWhatsAppButton.textContent = "Menyiapkan pembayaran…";
   checkoutActionStatus.textContent = "Memeriksa stok, harga, dan tarif pengiriman di server.";
 
@@ -578,10 +582,14 @@ recipientForm?.addEventListener("submit", async (event) => {
         checkoutActionStatus.textContent = `Pesanan ${data.orderNumber} menunggu pembayaran. Anda dapat melanjutkan pembayaran dari checkout ini.`;
       },
       onError: () => {
+        paymentRetryAvailable = true;
+        updateOrderButton();
         checkoutActionStatus.textContent = `Pembayaran pesanan ${data.orderNumber} belum berhasil. Coba lagi atau pilih metode pembayaran lain.`;
       },
       onClose: () => {
-        checkoutActionStatus.textContent = `Jendela pembayaran ditutup. Pesanan ${data.orderNumber} tetap menunggu pembayaran; klik tombol lagi untuk melanjutkan.`;
+        paymentRetryAvailable = true;
+        updateOrderButton();
+        checkoutActionStatus.textContent = `Jendela pembayaran ditutup. Pesanan ${data.orderNumber} tetap menunggu pembayaran; klik “Pilih metode pembayaran lain” untuk membuka pilihan Midtrans kembali.`;
       },
     });
   } catch (error) {

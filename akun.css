@@ -70,7 +70,18 @@ body.account-body {
   background: #fff;
   font: inherit;
 }
-.account-form input:focus-visible, .account-consent input:focus-visible, button:focus-visible, a:focus-visible {
+.account-form textarea, .account-form select {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  border: 1px solid #d9cbb9;
+  border-radius: 8px;
+  color: var(--account-charcoal);
+  background: #fff;
+  font: inherit;
+  resize: vertical;
+}
+.account-form input:focus-visible, .account-form textarea:focus-visible, .account-consent input:focus-visible, button:focus-visible, a:focus-visible {
   outline: 3px solid rgb(183 154 104 / 38%);
   outline-offset: 2px;
 }
@@ -137,7 +148,44 @@ body.account-body {
 .account-logout { margin-top: 18px; color: var(--account-charcoal); border-color: var(--account-line); background: #fff; }
 .account-footnote { margin: 17px 0 0; color: var(--account-muted); text-align: center; font-size: 13px; }
 
+.account-profile { display: grid; gap: 24px; }
+.account-profile .account-eyebrow { margin-bottom: 8px; }
+.account-profile .account-intro { margin-bottom: 0; }
+.member-status-card, .account-profile-section { padding: 20px; border: 1px solid var(--account-line); border-radius: 12px; background: #fff; }
+.member-status-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.member-status-heading .account-eyebrow { margin-bottom: 5px; }
+.member-status-heading h2, .account-profile-section h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 20px; }
+.member-status-badge, .member-email-verified { display: inline-flex; align-items: center; width: fit-content; padding: 6px 10px; border-radius: 999px; color: #315d3d; background: #e9f4ec; font-size: 12px; font-weight: 700; }
+.member-status-email { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 4px; color: var(--account-muted); font-size: 13px; }
+.member-status-email strong { color: var(--account-charcoal); overflow-wrap: anywhere; }
+.member-email-verified { padding: 4px 8px; font-size: 11px; }
+.member-email-verified.is-unverified { color: #805413; background: #fff3d6; }
+.member-since { margin: 8px 0 16px; color: var(--account-muted); font-size: 13px; }
+.member-token-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px; border: 1px solid #e7d5b4; border-radius: 10px; background: #fbf6ed; }
+.member-token-card > div:first-child { display: grid; gap: 4px; }
+.member-token-card > div:first-child > strong { color: #870b2d; font-family: Georgia, "Times New Roman", serif; font-size: 34px; line-height: 1; }
+.member-token-card > div:first-child > span:last-child { color: var(--account-muted); font-size: 12px; }
+.member-token-breakdown { color: var(--account-muted); font-size: 12px; }
+.member-token-breakdown p { margin: 4px 0; }
+.member-token-breakdown strong { color: var(--account-charcoal); }
+.member-token-note, .account-section-intro { margin: 12px 0 0; color: var(--account-muted); font-size: 13px; line-height: 1.55; }
+.account-profile-section h2 { margin-bottom: 0; }
+.account-profile-section .account-section-intro { margin: 7px 0 16px; }
+.account-profile-form { gap: 9px; }
+.account-profile-form > label:not(.account-consent) { margin-top: 3px; }
+.account-address-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 2px; }
+.account-address-grid > div { display: grid; gap: 8px; }
+.account-address-grid label { font-size: 13px; font-weight: 700; }
+.account-address-grid input { min-width: 0; }
+.account-email-preferences { padding-bottom: 16px; }
+.account-email-preferences .account-consent { margin-bottom: 2px; }
+.account-profile .account-status { margin-top: -12px; }
+.account-profile .account-logout { margin-top: 0; }
+
 @media (max-width: 480px) {
   .account-shell { width: min(100% - 20px, 520px); padding-top: 16px; }
   .account-card { border-radius: 14px; }
+  .member-status-card, .account-profile-section { padding: 16px; }
+  .member-status-heading { align-items: flex-start; flex-direction: column; }
+  .member-token-card { align-items: flex-start; flex-direction: column; }
 }

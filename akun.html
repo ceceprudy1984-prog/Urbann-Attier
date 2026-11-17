@@ -71,7 +71,36 @@
         <section id="profilePanel" class="account-profile" hidden aria-labelledby="profileTitle">
           <p class="account-eyebrow">AKUN PELANGGAN</p>
           <h1 id="profileTitle">Akun Anda</h1>
-          <p class="account-intro">Masuk sebagai <strong id="profileEmail"></strong></p>
+          <p class="account-intro">Kelola profil dan benefit keanggotaan Urbann Attier.</p>
+          <section class="member-status-card" aria-label="Status keanggotaan">
+            <div class="member-status-heading"><div><p class="account-eyebrow">KEANGGOTAAN</p><h2>Member Urbann Attier</h2></div><span class="member-status-badge" id="memberStatusBadge">Member aktif</span></div>
+            <p class="member-status-email"><span>Email akun</span><strong id="profileEmail"></strong><span class="member-email-verified" id="profileEmailVerified">Terverifikasi</span></p>
+            <p class="member-since" id="memberSince"></p>
+            <div class="member-token-card"><div><span class="account-eyebrow">TOKEN DISKON TERSISA</span><strong id="discountTokensRemaining">—</strong><span>dari 5 token</span></div><div class="member-token-breakdown"><p><strong id="discountTokensUsed">0</strong> sudah terpakai</p><p><strong id="discountTokensReserved">0</strong> ditahan pesanan berjalan</p></div></div>
+            <p class="member-token-note">Satu token digunakan untuk satu pesanan yang memenuhi syarat diskon member 5%. Token yang ditahan akan kembali jika pesanan dibatalkan atau tidak dibayar.</p>
+          </section>
+          <section class="account-profile-section" aria-labelledby="profileDetailsTitle">
+            <h2 id="profileDetailsTitle">Informasi profil</h2>
+            <p class="account-section-intro">Perbarui nama, nomor WhatsApp, dan alamat utama untuk memudahkan pemesanan.</p>
+            <form id="profileDetailsForm" class="account-form account-profile-form">
+              <label for="profileFullName">Nama lengkap</label>
+              <input id="profileFullName" name="fullName" type="text" autocomplete="name" maxlength="160" required />
+              <label for="profilePhone">Nomor WhatsApp</label>
+              <input id="profilePhone" name="phone" type="tel" autocomplete="tel" maxlength="32" required />
+              <label for="profileAddressLine">Alamat lengkap</label>
+              <textarea id="profileAddressLine" name="addressLine" autocomplete="street-address" maxlength="1000" rows="3" placeholder="Nama jalan, nomor rumah, RT/RW, patokan"></textarea>
+              <div class="account-address-grid">
+                <div><label for="profileDistrict">Kecamatan</label><input id="profileDistrict" name="district" autocomplete="address-level3" maxlength="120" /></div>
+                <div><label for="profileCity">Kota/kabupaten</label><input id="profileCity" name="city" autocomplete="address-level2" maxlength="120" /></div>
+                <div><label for="profileProvince">Provinsi</label><input id="profileProvince" name="province" autocomplete="address-level1" maxlength="120" /></div>
+                <div><label for="profilePostalCode">Kode pos</label><input id="profilePostalCode" name="postalCode" autocomplete="postal-code" maxlength="20" /></div>
+              </div>
+              <button class="account-submit account-submit-secondary" id="saveProfileButton" type="submit">Simpan informasi profil</button>
+            </form>
+          </section>
+          <section class="account-profile-section account-email-preferences" aria-labelledby="emailPreferenceTitle">
+            <h2 id="emailPreferenceTitle">Informasi promo melalui email</h2>
+            <p class="account-section-intro">Pilihan ini opsional dan dapat diubah kapan saja. Email penting terkait akun dan pesanan tetap dikirim.</p>
           <form id="preferenceForm" class="account-preference-form">
             <label class="account-consent" for="profileEmailConsent">
               <input id="profileEmailConsent" type="checkbox" />
@@ -79,6 +108,7 @@
             </label>
             <button class="account-submit account-submit-secondary" type="submit">Simpan pilihan email</button>
           </form>
+          </section>
           <p class="account-status" id="profileStatus" role="status" aria-live="polite"></p>
           <button class="account-logout" id="logoutButton" type="button">Keluar dari akun</button>
         </section>

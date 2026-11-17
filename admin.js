@@ -270,7 +270,24 @@ async function sendPromoCampaign() {
   if (state.promoEmailBusy) return;
   const subject = $("#promoEmailSubject").value.trim();
   const message = $("#promoEmailMessage").value.trim();
+  const imageUrl = $("#promoEmailImageUrl").value.trim();
+  const buttonText = $("#promoEmailButtonText").value.trim();
+  const buttonUrl = $("#promoEmailButtonUrl").value.trim();
   if (!subject || !message || !state.promoAudienceCount) return;
+  if (Boolean(buttonText) !== Boolean(buttonUrl)) {
+    setStatus("#promoEmailStatus", "Isi teks tombol dan alamat tujuan bersama-sama.", true);
+    return;
+  }
+  try {
+    for (const [label, value] of [["Gambar", imageUrl], ["Tautan tombol", buttonUrl]]) {
+      if (!value) continue;
+      const url = new URL(value);
+      if (!["https:", "http:"].includes(url.protocol)) throw new Error(`${label} harus memakai alamat website http:// atau https://.`);
+    }
+  } catch (error) {
+    setStatus("#promoEmailStatus", error.message || "Alamat gambar atau tautan tidak valid.", true);
+    return;
+  }
   const confirmed = window.confirm(`Kirim email promo “${subject}” kepada sekitar ${state.promoAudienceCount} member yang menyetujui email? Email yang sudah terkirim tidak dapat ditarik kembali.`);
   if (!confirmed) return;
 
@@ -280,7 +297,7 @@ async function sendPromoCampaign() {
   updatePromoEmailSendState();
   setStatus("#promoEmailStatus", "Mengirim kampanye. Jangan tutup halaman sampai hasil pengiriman tampil.");
   try {
-    const result = await invokePromoEmailFunction({ action: "send", subject, message });
+    const result = await invokePromoEmailFunction({ action: "send", subject, message, imageUrl, buttonText, buttonUrl });
     $("#promoEmailRecipientCount").textContent = `${Number(result.recipientCount || 0).toLocaleString("id-ID")} member`;
     state.promoAudienceCount = Number(result.recipientCount || 0);
     if (result.status === "sent") {
@@ -290,6 +307,9 @@ async function sendPromoCampaign() {
     }
     $("#promoEmailSubject").value = "";
     $("#promoEmailMessage").value = "";
+    $("#promoEmailImageUrl").value = "";
+    $("#promoEmailButtonText").value = "";
+    $("#promoEmailButtonUrl").value = "";
     await loadPromoEmailHistory();
   } catch (error) {
     setStatus("#promoEmailStatus", `Kampanye belum berhasil diproses: ${error.message}`, true);
@@ -321,11 +341,86 @@ function safeCampaignUrl(value, { allowEmpty = false } = {}) {
   const text = String(value || "").trim();
   if (!text && allowEmpty) return null;
   if (text.startsWith("#") || (text.startsWith("/") && !text.startsWith("//"))) return text;
+  if (text.startsWith("//")) throw new Error("Gunakan https:// di awal alamat eksternal.");
   try {
-    const url = new URL(text);
-    if (["http:", "https:"].includes(url.protocol)) return url.href;
+    const isAbsolute = /^[a-z][a-z\d+.-]*:/i.test(text);
+    const url = isAbsolute ? new URL(text) : new URL(text, "https://urbann-attier.invalid/");
+    if (["http:", "https:"].includes(url.protocol)) return isAbsolute ? url.href : text;
   } catch { /* report a clear validation message below */ }
   throw new Error("Tautan harus berupa alamat http/https, tautan relatif, atau tujuan seperti #produk.");
+}
+
+function renderPromoProductOptions(selectedId = $("#homepagePromoProduct").value) {
+  const select = $("#homepagePromoProduct");
+  const availableProducts = state.products.filter((product) => product.is_active);
+  select.innerHTML = '<option value="">Pilih produk…</option>' + availableProducts.map((product) =>
+    '<option value="' + escapeHtml(product.id) + '">' + escapeHtml(product.name) + '</option>').join("");
+  if (availableProducts.some((product) => String(product.id) === String(selectedId))) {
+    select.value = String(selectedId);
+  }
+}
+
+function updatePromoDestinationControls() {
+  const type = $("#homepagePromoCtaType").value;
+  $("#homepagePromoProductField").hidden = type !== "product";
+  $("#homepagePromoCustomField").hidden = type !== "custom";
+  $("#homepagePromoCtaHelp").textContent = type === "product"
+    ? "Pilih produk; alamat halaman detail akan dibuat otomatis."
+    : type === "custom"
+      ? "Masukkan bagian halaman, halaman lain, atau tautan eksternal."
+      : "Tombol akan membawa pengunjung ke bagian katalog di halaman utama.";
+  const productId = $("#homepagePromoProduct").value;
+  const customUrl = $("#homepagePromoCustomUrl").value.trim();
+  const destinationPreview = type === "catalog"
+    ? "#produk (bagian katalog)"
+    : type === "product"
+      ? productId ? "detail-produk.html?id=" + encodeURIComponent(productId) : "Pilih produk untuk melihat alamat tujuannya."
+      : customUrl || "Masukkan alamat tujuan.";
+  $("#homepagePromoCtaPreview").textContent = "Alamat tujuan: " + destinationPreview;
+}
+
+function setPromoDestination(value) {
+  const target = String(value || "#produk").trim();
+  renderPromoProductOptions();
+
+  if (target === "#produk" || target === "#detail-produk.html") {
+    $("#homepagePromoCtaType").value = "catalog";
+    $("#homepagePromoCustomUrl").value = "";
+    updatePromoDestinationControls();
+    return;
+  }
+
+  try {
+    const url = new URL(target, window.location.href);
+    const productId = url.pathname.endsWith("/detail-produk.html") || url.pathname === "detail-produk.html"
+      ? url.searchParams.get("id")
+      : null;
+    if (url.origin === window.location.origin && productId
+      && state.products.some((product) => product.is_active && String(product.id) === productId)) {
+      $("#homepagePromoCtaType").value = "product";
+      renderPromoProductOptions(productId);
+      $("#homepagePromoCustomUrl").value = "";
+      updatePromoDestinationControls();
+      return;
+    }
+  } catch { /* keep an unrecognized destination in the custom field */ }
+
+  $("#homepagePromoCtaType").value = "custom";
+  $("#homepagePromoCustomUrl").value = target;
+  updatePromoDestinationControls();
+}
+
+function getPromoDestinationUrl() {
+  const type = $("#homepagePromoCtaType").value;
+  if (type === "catalog") return "#produk";
+  if (type === "product") {
+    const productId = $("#homepagePromoProduct").value;
+    if (!productId || !state.products.some((product) => product.is_active && String(product.id) === productId)) {
+      throw new Error("Pilih produk aktif sebagai tujuan tombol promo.");
+    }
+    return "detail-produk.html?id=" + encodeURIComponent(productId);
+  }
+  return safeCampaignUrl($("#homepagePromoCustomUrl").value);
 }
 
 function showHomepageImagePreview(type, url) {
@@ -341,6 +436,7 @@ function showHomepageImagePreview(type, url) {
 
 async function loadHomepageContent() {
   if (!supabaseClient || state.spotlightBusy) return;
+  if (!state.products.length) await loadProducts();
   setStatus("#homepageContentStatus", "Memuat konten halaman utama…");
   const { data, error } = await supabaseClient.from("store_public_settings")
     .select(homepageContentColumns).eq("id", 1).maybeSingle();
@@ -362,7 +458,7 @@ async function loadHomepageContent() {
   $("#homepagePromoStartsAt").value = toDateTimeLocal(settings.homepage_promo_starts_at);
   $("#homepagePromoEndsAt").value = toDateTimeLocal(settings.homepage_promo_ends_at);
   $("#homepagePromoCtaLabel").value = settings.homepage_promo_cta_label || "Lihat promo";
-  $("#homepagePromoCtaUrl").value = settings.homepage_promo_cta_url || "#produk";
+  setPromoDestination(settings.homepage_promo_cta_url || "#produk");
   $("#homepagePromoImageUrl").value = settings.homepage_promo_image_url || "";
   state.spotlightFiles = { launch: null, promo: null };
   showHomepageImagePreview("launch", settings.homepage_launch_image_url);
@@ -428,7 +524,7 @@ async function saveHomepageContent() {
       homepage_promo_description: promoDescription,
       homepage_promo_image_url: promoImage,
       homepage_promo_cta_label: $("#homepagePromoCtaLabel").value.trim() || "Lihat promo",
-      homepage_promo_cta_url: safeCampaignUrl($("#homepagePromoCtaUrl").value || "#produk"),
+      homepage_promo_cta_url: getPromoDestinationUrl(),
       homepage_promo_starts_at: promoStarts,
       homepage_promo_ends_at: promoEnds,
     };
@@ -971,32 +1067,52 @@ function renderProducts() {
     const known = product.inventory.filter((item) => item.stock_quantity !== null);
     const totalStock = known.reduce((sum, item) => sum + Math.max(0, Number(item.stock_quantity) - Number(item.reserved_quantity || 0)), 0);
     const totalReserved = known.reduce((sum, item) => sum + Number(item.reserved_quantity || 0), 0);
-    const stockText = known.length ? `${totalStock} pcs tersedia${totalReserved ? ` · ${totalReserved} dicadangkan` : ""}` : "Belum diisi";
+    const stockText = known.length ? `${totalStock.toLocaleString("id-ID")} pcs tersedia${totalReserved ? ` · ${totalReserved.toLocaleString("id-ID")} dicadangkan` : ""}` : "Belum diisi";
     const stockByVariant = product.variants.length && product.sizes.length
       ? `<div class="product-stock-list">${product.variants.map((variant) => {
         const quantities = product.sizes.map((size) => {
           const row = product.inventory.find((item) => item.variant_id === variant.id && item.size_id === size.id);
           const available = row?.stock_quantity == null ? null : Math.max(0, Number(row.stock_quantity) - Number(row.reserved_quantity || 0));
           const held = Number(row?.reserved_quantity || 0);
-          const stateClass = available === 0 ? "is-zero" : available == null ? "is-unknown" : "";
-          return `<span class="product-stock-value ${stateClass}">${escapeHtml(size.size_name)}: ${available == null ? "—" : `${available}${held ? ` (${held} dicadangkan)` : ""}`}</span>`;
+          const stateClass = available == null
+            ? "is-unknown"
+            : available === 0
+              ? "is-zero"
+              : available <= 5
+                ? "is-warning-yellow"
+                : available <= 10
+                  ? "is-warning-green"
+                  : "";
+          return `<span class="product-stock-value ${stateClass}${held ? " is-held" : ""}"><strong>${escapeHtml(size.size_name)}</strong><span>${available == null ? "Belum diisi" : `${available} tersedia`}</span>${held ? `<small>${held} dicadangkan</small>` : ""}</span>`;
         }).join("");
-        return `<div class="product-stock-color"><strong>${escapeHtml(variant.color_name)}</strong><span>${quantities}</span></div>`;
+        return `<section class="product-stock-color"><h4>${escapeHtml(variant.color_name)}</h4><div class="product-stock-sizes">${quantities}</div></section>`;
       }).join("")}</div>`
       : "Belum ada warna / ukuran";
-    return `<tr>
-      <td><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.sku || product.slug)}</small></td>
-      <td>${formatRupiah(product.price_retail)}</td>
-      <td>${formatRupiah(product.price_series)}</td>
-      <td>${formatRupiah(product.price_wholesale)}<small>Mulai ${Number(product.wholesale_min_qty) || 20} pcs</small></td>
-      <td>${product.variants.length} warna · ${product.sizes.length} ukuran</td>
-      <td><small class="stock-total">Total diketahui: ${stockText}</small>${stockByVariant}</td>
-      <td><span class="status-pill ${product.is_active ? "is-on" : "is-off"}">${product.is_active ? "Aktif" : "Draft"}</span></td>
-      <td><div class="row-actions"><button class="button button-small" type="button" data-stock-product="${product.id}">Atur stok</button>
+    return `<article class="product-catalog-card">
+      <header class="product-catalog-card-header">
+        <div class="product-catalog-identity"><h3>${escapeHtml(product.name)}</h3><small>${escapeHtml(product.sku || product.slug)}</small></div>
+        <span class="status-pill ${product.is_active ? "is-on" : "is-off"}">${product.is_active ? "Aktif" : "Draft"}</span>
+        <div class="product-catalog-actions"><button class="button button-small" type="button" data-stock-product="${product.id}">Atur stok</button>
       <button class="button button-small" type="button" data-edit-product="${product.id}">Edit</button>
       <button class="button button-small button-quiet" type="button" data-toggle-product="${product.id}" data-active="${product.is_active}">${product.is_active ? "Jadikan draft" : "Aktifkan"}</button>
-      <button class="button button-small button-danger" type="button" data-delete-product="${product.id}">Hapus</button></div></td>
-    </tr>`;
+      <button class="button button-small button-danger" type="button" data-delete-product="${product.id}">Hapus</button></div>
+      </header>
+      <div class="product-catalog-summary">
+        <div><span>Harga ecer</span><strong>${formatRupiah(product.price_retail)}</strong></div>
+        <div><span>Harga serian</span><strong>${formatRupiah(product.price_series)}</strong></div>
+        <div><span>Harga grosir</span><strong>${formatRupiah(product.price_wholesale)}</strong><small>Mulai ${Number(product.wholesale_min_qty) || 20} pcs</small></div>
+        <div><span>Varian</span><strong>${product.variants.length} warna · ${product.sizes.length} ukuran</strong></div>
+      </div>
+      <section class="product-catalog-inventory">
+        <div class="product-catalog-inventory-heading"><div><h4>Rincian stok</h4><p>Stok tersedia: <strong>${stockText}</strong></p></div><span>${product.variants.length} warna</span></div>
+        <div class="stock-alert-legend" aria-label="Keterangan warna peringatan stok">
+          <span><i class="stock-alert-swatch is-warning-green"></i>Hijau: 6–10 pcs</span>
+          <span><i class="stock-alert-swatch is-warning-yellow"></i>Kuning: 1–5 pcs</span>
+          <span><i class="stock-alert-swatch is-zero"></i>Merah: habis</span>
+        </div>
+        ${stockByVariant}
+      </section>
+    </article>`;
   }).join("");
   $("#productsEmpty").hidden = products.length > 0;
 }
@@ -1035,6 +1151,7 @@ async function loadProducts() {
     images: images.filter((row) => row.product_id === product.id),
     inventory: inventory.filter((row) => row.product_id === product.id),
   }));
+  renderPromoProductOptions();
   renderProducts();
   setStatus("#productsStatus", `${state.products.length} produk dimuat.`);
 }
@@ -1496,6 +1613,9 @@ document.querySelectorAll("[data-admin-view]").forEach((button) => {
   button.addEventListener("click", () => setActiveView(button.dataset.adminView));
 });
 $("#saveHomepageContentButton").addEventListener("click", saveHomepageContent);
+$("#homepagePromoCtaType").addEventListener("change", updatePromoDestinationControls);
+$("#homepagePromoProduct").addEventListener("change", updatePromoDestinationControls);
+$("#homepagePromoCustomUrl").addEventListener("input", updatePromoDestinationControls);
 $("#homepageLaunchImageFile").addEventListener("change", (event) => handleHomepageImageChange("launch", event));
 $("#homepagePromoImageFile").addEventListener("change", (event) => handleHomepageImageChange("promo", event));
 $("#homepageLaunchImageUrl").addEventListener("input", (event) => {
