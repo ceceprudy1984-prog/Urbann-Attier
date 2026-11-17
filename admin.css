@@ -125,6 +125,20 @@ button {
   cursor: wait;
   opacity: 0.65;
 }
+.login-forgot-button {
+  justify-self: start;
+  padding: 2px 0;
+  border: 0;
+  color: var(--admin-gold-dark);
+  background: transparent;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.login-forgot-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 .button-quiet {
   color: var(--admin-ink);
   border-color: var(--admin-line);

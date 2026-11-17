@@ -33,6 +33,7 @@ function getAccountRedirect(mode = "verified") {
   url.searchParams.set("mode", mode);
   const returnTo = new URLSearchParams(window.location.search).get("return");
   if (returnTo === "checkout") url.searchParams.set("return", "checkout");
+  if (returnTo === "admin") url.searchParams.set("return", "admin");
   return url.href;
 }
 
@@ -260,7 +261,12 @@ newPasswordForm.addEventListener("submit", async (event) => {
     return;
   }
   newPasswordForm.reset();
-  setStatus(accountStatus, "Kata sandi berhasil diperbarui. Akun Anda sudah dapat digunakan.");
+  if (new URLSearchParams(window.location.search).get("return") === "admin") {
+    setStatus(accountStatus, "Kata sandi berhasil diperbarui. Silakan masuk kembali ke dashboard admin.");
+    accountSwitch.innerHTML = '<a href="admin.html">Kembali ke login admin</a>';
+  } else {
+    setStatus(accountStatus, "Kata sandi berhasil diperbarui. Akun Anda sudah dapat digunakan.");
+  }
 });
 
 preferenceForm.addEventListener("submit", async (event) => {

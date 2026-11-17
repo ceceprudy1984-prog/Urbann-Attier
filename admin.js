@@ -1524,6 +1524,30 @@ async function handleLogin(event) {
   }
 }
 
+async function handleAdminPasswordRecovery() {
+  if (!supabaseClient) return showLogin("Konfigurasi Supabase belum lengkap.");
+  const email = $("#adminEmail").value.trim();
+  if (!email) {
+    setStatus("#loginStatus", "Masukkan email admin terlebih dahulu.", true);
+    $("#adminEmail").focus();
+    return;
+  }
+
+  const button = $("#adminForgotPasswordButton");
+  button.disabled = true;
+  setStatus("#loginStatus", "Mengirim tautan pemulihan…");
+  try {
+    const redirectTo = new URL("akun.html?mode=new-password&return=admin", window.location.href).href;
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+    setStatus("#loginStatus", "Jika email terdaftar, tautan pemulihan akan dikirim. Periksa kotak masuk dan folder spam.");
+  } catch (error) {
+    setStatus("#loginStatus", error.message || "Tautan pemulihan belum dapat dikirim. Silakan coba lagi.", true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function handleLogout() {
   await supabaseClient.auth.signOut();
   state.user = null;
@@ -1547,6 +1571,7 @@ async function initialize() {
 }
 
 $("#loginForm").addEventListener("submit", handleLogin);
+$("#adminForgotPasswordButton").addEventListener("click", handleAdminPasswordRecovery);
 $("#logoutButton").addEventListener("click", handleLogout);
 $("#refreshButton").addEventListener("click", async () => {
   setStatus("#dashboardStatus", "Memuat ulang data…");

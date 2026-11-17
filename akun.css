@@ -145,6 +145,7 @@ body.account-body {
 .account-status.is-error { color: var(--account-error); }
 .account-switch { margin: 12px 0 0; color: var(--account-muted); text-align: center; font-size: 14px; }
 .account-switch button { padding: 0; border: 0; color: #8d6c37; background: none; font: inherit; font-weight: 700; cursor: pointer; }
+.account-switch a { color: #8d6c37; font-weight: 700; text-underline-offset: 3px; }
 .account-logout { margin-top: 18px; color: var(--account-charcoal); border-color: var(--account-line); background: #fff; }
 .account-footnote { margin: 17px 0 0; color: var(--account-muted); text-align: center; font-size: 13px; }
 
