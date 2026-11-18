@@ -106,6 +106,52 @@ function formatRupiah(amount) {
   return amount == null ? "Segera tersedia" : `Rp ${Number(amount).toLocaleString("id-ID")}`;
 }
 
+const motionPreference = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+let revealObserver;
+
+function observeMotionElements(root = document) {
+  if (!document.body.classList.contains("motion-enabled")
+    || document.body.classList.contains("opening-splash-active") || !revealObserver) return;
+  const elements = [];
+  if (root instanceof Element && root.matches(".motion-reveal")) elements.push(root);
+  elements.push(...root.querySelectorAll?.(".motion-reveal") || []);
+  elements.forEach((element, index) => {
+    if (element.dataset.motionObserved) return;
+    element.dataset.motionObserved = "true";
+    const stagger = window.matchMedia("(max-width: 600px)").matches ? 55 : 85;
+    element.style.setProperty("--motion-delay", `${Math.min(index, 3) * stagger}ms`);
+    revealObserver.observe(element);
+  });
+}
+
+function configureMotion() {
+  const canAnimateOnScroll = !motionPreference?.matches && "IntersectionObserver" in window;
+  document.body.classList.toggle("motion-enabled", canAnimateOnScroll);
+  revealObserver?.disconnect();
+  revealObserver = null;
+  if (!canAnimateOnScroll) {
+    document.querySelectorAll(".motion-reveal").forEach((element) => {
+      delete element.dataset.motionObserved;
+      element.classList.remove("is-visible");
+      element.style.removeProperty("--motion-delay");
+    });
+    return;
+  }
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      revealObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -24px 0px" });
+  observeMotionElements(document);
+}
+
+document.addEventListener("urbann:opening-finished", () => observeMotionElements(document));
+
+configureMotion();
+motionPreference?.addEventListener?.("change", configureMotion);
+
 function renderProducts(searchTerm = "") {
   if (!grid) return;
   const query = searchTerm.trim().toLocaleLowerCase("id-ID");
@@ -116,7 +162,7 @@ function renderProducts(searchTerm = "") {
   grid.innerHTML = filtered.length
     ? filtered.map((item) => {
       const firstImage = safeImageUrl(item.varianWarna[0]?.foto);
-      return `<article class="produk-card">
+      return `<article class="produk-card motion-reveal">
         <div class="produk-img"><img src="${escapeHtml(firstImage)}" alt="${escapeHtml(item.nama)}" loading="lazy"></div>
         <div class="produk-info">
           <h3 class="produk-nama">${escapeHtml(item.nama)}</h3>
@@ -126,11 +172,12 @@ function renderProducts(searchTerm = "") {
       </article>`;
     }).join("")
     : '<p class="produk-empty">Belum ada produk aktif di katalog. Silakan cek kembali nanti.</p>';
+  observeMotionElements(grid);
 }
 
 function renderSpotlightProductCard(item, badge) {
   const image = safeImageUrl(item.varianWarna[0]?.foto);
-  return `<article class="produk-card">
+  return `<article class="produk-card motion-reveal">
     <div class="produk-img"><span class="spotlight-product-badge">${escapeHtml(badge)}</span><img src="${escapeHtml(image)}" alt="${escapeHtml(item.nama)}" loading="lazy"></div>
     <div class="produk-info">
       <h3 class="produk-nama">${escapeHtml(item.nama)}</h3>
@@ -169,6 +216,7 @@ function renderSpotlight() {
     launch.hidden = true;
     promo.hidden = !isPromoVisible;
     promoEmpty.hidden = isPromoVisible;
+    observeMotionElements(panel);
     if (isPromoVisible) {
       document.querySelector("#spotlightPromoBadge").textContent = settings.homepage_promo_badge || "PROMO";
       document.querySelector("#spotlightPromoTitle").textContent = settings.homepage_promo_title || "Penawaran istimewa untuk Anda";
@@ -207,6 +255,7 @@ function renderSpotlight() {
     products.innerHTML = bestsellers.length
       ? bestsellers.map((item) => renderSpotlightProductCard(item, "Terlaris")).join("")
       : '<p class="produk-empty">Pilihan terlaris akan muncul setelah ada pesanan yang berhasil dibayar.</p>';
+    observeMotionElements(products);
     return;
   }
 
@@ -235,6 +284,7 @@ function renderSpotlight() {
   products.innerHTML = newest.length
     ? newest.map((item) => renderSpotlightProductCard(item, "Baru")).join("")
     : '<p class="produk-empty">Produk baru akan tampil di sini setelah ditambahkan ke katalog.</p>';
+  observeMotionElements(products);
 }
 
 async function loadBestsellerProductIds() {

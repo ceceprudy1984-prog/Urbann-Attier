@@ -91,6 +91,7 @@ body.account-body {
 .account-policy h2 { margin: 24px 0 8px; font-family: Georgia, "Times New Roman", serif; font-size: 21px; }
 .account-policy p:not(.account-eyebrow):not(.account-intro) { color: #5f5859; line-height: 1.7; }
 .account-policy-link { display: inline-block; margin-top: 18px; }
+.account-policy-action { display: block; width: fit-content; margin: 10px auto 0; padding: 10px 16px; border: 1px solid #d9c7a8; border-radius: 8px; background: #fffaf2; font-weight: 700; text-align: center; text-decoration: underline; text-underline-offset: 3px; }
 
 .member-celebration { width: min(92vw, 520px); max-width: 520px; padding: 0; overflow: hidden; border: 1px solid var(--account-line); border-radius: 20px; color: var(--account-charcoal); background: var(--account-paper); box-shadow: 0 24px 90px rgb(48 43 44 / 28%); }
 .member-celebration::backdrop { background: rgb(35 29 30 / 68%); backdrop-filter: blur(5px); }
@@ -183,10 +184,33 @@ body.account-body {
 .account-profile .account-status { margin-top: -12px; }
 .account-profile .account-logout { margin-top: 0; }
 
+.floating-chat-link {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 1200;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 999px;
+  color: #fff;
+  background: #168b50;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 22%);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.floating-chat-link:hover { background: #117744; }
+.floating-chat-icon { display: grid; width: 24px; height: 24px; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-size: 13px; line-height: 1; }
+
 @media (max-width: 480px) {
   .account-shell { width: min(100% - 20px, 520px); padding-top: 16px; }
   .account-card { border-radius: 14px; }
   .member-status-card, .account-profile-section { padding: 16px; }
   .member-status-heading { align-items: flex-start; flex-direction: column; }
   .member-token-card { align-items: flex-start; flex-direction: column; }
+  .floating-chat-link { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); min-height: 48px; padding: 0 15px; }
 }

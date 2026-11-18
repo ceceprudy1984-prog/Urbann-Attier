@@ -157,25 +157,33 @@ function updateCheckoutSummary() {
       : UrbannCart.formatRupiah(packagingFee);
   }
   if (shippingElement) {
-    shippingElement.textContent = selectedFee == null
+    setCheckoutValue(shippingElement, selectedFee == null
       ? "Pilih layanan"
-      : UrbannCart.formatRupiah(selectedFee);
+      : UrbannCart.formatRupiah(selectedFee));
   }
   if (grandTotalElement) {
     if (serverPaymentSummary) {
-      grandTotalElement.textContent = UrbannCart.formatRupiah(serverPaymentSummary.amount);
+      setCheckoutValue(grandTotalElement, UrbannCart.formatRupiah(serverPaymentSummary.amount));
     } else {
-      grandTotalElement.textContent = !allPricesAvailable
+      setCheckoutValue(grandTotalElement, !allPricesAvailable
         ? "Harga belum lengkap"
         : packagingFee == null
           ? "Menunggu biaya pengemasan"
           : selectedFee == null
             ? "Pilih layanan pengiriman"
-            : UrbannCart.formatRupiah(checkoutSubtotal + packagingFee + selectedFee);
+            : UrbannCart.formatRupiah(checkoutSubtotal + packagingFee + selectedFee));
     }
   }
 
   updateOrderButton();
+}
+
+function setCheckoutValue(element, value) {
+  if (element.textContent === value) return;
+  element.textContent = value;
+  element.classList.remove("checkout-value-updated");
+  requestAnimationFrame(() => element.classList.add("checkout-value-updated"));
+  element.addEventListener("animationend", () => element.classList.remove("checkout-value-updated"), { once: true });
 }
 
 function renderCheckout() {

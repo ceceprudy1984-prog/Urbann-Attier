@@ -11,7 +11,7 @@
   <body class="halaman-checkout">
     <main class="checkout-page">
       <a class="detail-kembali" href="keranjang.html">&larr; Kembali ke keranjang</a>
-      <header class="checkout-heading">
+      <header class="checkout-heading motion-reveal">
         <p class="section-label">Langkah terakhir sebelum memesan</p>
         <h1 class="detail-page-title">Konfirmasi Pesanan</h1>
         <ol class="checkout-steps" aria-label="Tahapan checkout">
@@ -27,13 +27,13 @@
 
       <div class="checkout-layout" id="checkoutContent">
         <div class="checkout-main">
-          <section class="checkout-card" aria-labelledby="checkoutProductsTitle">
+          <section class="checkout-card motion-reveal" aria-labelledby="checkoutProductsTitle">
             <div class="checkout-card-heading"><span class="checkout-number">1</span><div><h2 id="checkoutProductsTitle">Pesanan Anda</h2><p>Pastikan warna, ukuran, dan jumlah sudah sesuai.</p></div></div>
             <div id="checkoutProducts" class="checkout-products"></div>
             <a class="checkout-edit-link" href="keranjang.html">Ubah keranjang</a>
           </section>
 
-          <section class="checkout-card" aria-labelledby="recipientTitle">
+          <section class="checkout-card motion-reveal" aria-labelledby="recipientTitle">
             <div class="checkout-card-heading"><span class="checkout-number">2</span><div><h2 id="recipientTitle">Informasi penerima</h2><p>Informasi ini diperlukan untuk menghitung pengiriman.</p></div></div>
             <form id="recipientForm" class="checkout-form">
               <label>Nama lengkap<input name="name" type="text" autocomplete="name" placeholder="Nama penerima" required /></label>
@@ -56,7 +56,7 @@
             </form>
           </section>
 
-          <section class="checkout-card" aria-labelledby="deliveryTitle">
+          <section class="checkout-card motion-reveal" aria-labelledby="deliveryTitle">
             <div class="checkout-card-heading"><span class="checkout-number">3</span><div><h2 id="deliveryTitle">Pilih pengiriman</h2><p>Periksa tarif J&amp;T, JNE, SiCepat, SPX, dan Lion Parcel.</p></div></div>
             <p class="checkout-package-weight" id="shippingPackageWeight">Berat paket dihitung dari jumlah produk.</p>
             <button class="btn btn-secondary checkout-rate-button" id="loadShippingRates" type="button" disabled>Cek ongkir</button>
@@ -65,13 +65,13 @@
             <p class="checkout-shipping-hint">Tarif dihitung dari RajaOngkir dan diverifikasi ulang saat pesanan dibuat. Nilai ongkir dan total pesanan ditampilkan kembali di halaman pembayaran Midtrans.</p>
           </section>
 
-          <section class="checkout-card" aria-labelledby="paymentTitle">
+          <section class="checkout-card motion-reveal" aria-labelledby="paymentTitle">
             <div class="checkout-card-heading"><span class="checkout-number">4</span><div><h2 id="paymentTitle">Pembayaran aman</h2><p>Selesaikan pembayaran melalui halaman Midtrans setelah memeriksa total pesanan.</p></div></div>
             <div class="checkout-pending checkout-payment-pending"><span class="checkout-pending-icon" aria-hidden="true">✓</span><div><strong>Status diperbarui otomatis</strong><p>Pesanan diproses setelah Midtrans mengirim konfirmasi pembayaran yang valid.</p></div></div>
           </section>
         </div>
 
-        <aside class="checkout-summary" aria-labelledby="checkoutSummaryTitle">
+        <aside class="checkout-summary motion-reveal" aria-labelledby="checkoutSummaryTitle">
           <h2 id="checkoutSummaryTitle">Ringkasan pembayaran</h2>
           <div id="checkoutTotals"></div>
           <p class="checkout-total-row" id="checkoutDiscountRow" hidden><span id="checkoutDiscountLabel">Diskon member</span><strong id="checkoutDiscountAmount">-</strong></p>
@@ -84,6 +84,7 @@
           <p class="checkout-summary-note checkout-payment-retry-hint" id="checkoutPaymentRetryHint">Jika ingin mengganti metode pembayaran di Midtrans, tutup jendela pembayaran dengan tombol ×. Tombol di atas akan membuka pilihan pembayaran lagi.</p>
           <p class="checkout-action-status" id="checkoutActionStatus" role="status" aria-live="polite"></p>
           <p class="checkout-summary-note">Tarif ongkir dan total dihitung kembali sebelum pembayaran. Stok pesanan yang menunggu pembayaran dicadangkan sementara dan dikembalikan jika transaksi gagal atau kedaluwarsa.</p>
+          <p class="checkout-summary-note checkout-privacy-link">Sebelum melanjutkan, baca <a href="kebijakan-privasi.html" target="_blank" rel="noopener noreferrer">Kebijakan Privasi Urbann Attier</a>.</p>
           <a class="checkout-back-link" href="keranjang.html">Kembali dan ubah pesanan</a>
         </aside>
       </div>
@@ -94,5 +95,6 @@
     <script src="main.js"></script>
     <script src="cart-store.js"></script>
     <script src="checkout.js"></script>
+    <a class="floating-chat-link" href="https://wa.me/6282318500057?text=Halo%20Urbann%20Attier%2C%20saya%20ingin%20bertanya." target="_blank" rel="noopener noreferrer" aria-label="Chat Urbann Attier melalui WhatsApp"><span class="floating-chat-icon" aria-hidden="true">✆</span><span>Chat WhatsApp</span></a>
   </body>
 </html>

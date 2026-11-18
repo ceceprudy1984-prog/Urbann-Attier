@@ -13,7 +13,34 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 
-<body>
+<body class="has-opening-splash opening-splash-active">
+  <div class="opening-splash" id="openingSplash" aria-hidden="true">
+    <div class="opening-splash-logo-stage">
+      <img class="opening-splash-logo" src="assets/urban attier tf.png" alt="" fetchpriority="high" />
+    </div>
+    <div class="opening-splash-title-stage">
+      <p class="opening-splash-title">Elegan untuk<br /><span>setiap moment</span></p>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const splash = document.querySelector("#openingSplash");
+      const finishSplash = () => {
+        if (!splash?.isConnected) return;
+        splash.remove();
+        document.body.classList.remove("opening-splash-active");
+        document.body.classList.add("opening-finished");
+        document.dispatchEvent(new CustomEvent("urbann:opening-finished"));
+      };
+      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        finishSplash();
+      } else {
+        splash?.addEventListener("animationend", (event) => {
+          if (event.animationName === "opening-curtain-out") finishSplash();
+        });
+      }
+    })();
+  </script>
   <dialog class="member-welcome" id="memberWelcome" aria-labelledby="memberWelcomeTitle" aria-describedby="memberWelcomeDescription">
     <div class="member-welcome-card">
       <button class="member-welcome-close" type="button" data-welcome-continue aria-label="Tutup pemberitahuan">&times;</button>
@@ -80,7 +107,7 @@
   <!-- SOROTAN PRODUK DAN PROMO -->
   <section class="spotlight-section" id="sorotan" aria-labelledby="spotlightTitle">
     <div class="spotlight-inner">
-      <div class="section-header spotlight-header">
+      <div class="section-header spotlight-header motion-reveal">
         <span class="section-label">Pilihan Urbann Attier</span>
         <h2 id="spotlightTitle">Temukan yang sedang istimewa</h2>
         <p>Lihat koleksi yang baru hadir, pilihan pelanggan, dan benefit khusus member.</p>
@@ -95,11 +122,11 @@
         <div class="produk-grid spotlight-products" id="spotlightProducts" aria-live="polite">
           <p class="produk-empty">Memuat pilihan produk…</p>
         </div>
-        <article class="spotlight-launch" id="spotlightLaunch" hidden>
+        <article class="spotlight-launch motion-reveal" id="spotlightLaunch" hidden>
           <div class="spotlight-launch-image-wrap"><img id="spotlightLaunchImage" alt="" /><span class="spotlight-launch-stamp">SEGERA HADIR</span></div>
           <div class="spotlight-launch-copy"><span class="spotlight-promo-label">Koleksi berikutnya</span><h3 id="spotlightLaunchTitle"></h3><p id="spotlightLaunchMessage"></p><p class="spotlight-launch-date" id="spotlightLaunchDate"></p><a class="btn btn-primary" href="#produk">Jelajahi koleksi kami</a></div>
         </article>
-        <article class="spotlight-promo" id="spotlightPromo" hidden>
+        <article class="spotlight-promo motion-reveal" id="spotlightPromo" hidden>
           <div class="spotlight-promo-copy">
             <span class="spotlight-promo-label" id="spotlightPromoBadge"></span>
             <h3 id="spotlightPromoTitle"></h3>
@@ -110,7 +137,7 @@
           <img class="spotlight-promo-image" id="spotlightPromoImage" alt="" hidden />
           <div class="spotlight-promo-mark" aria-hidden="true">✦</div>
         </article>
-        <article class="spotlight-promo-empty" id="spotlightPromoEmpty" hidden>
+        <article class="spotlight-promo-empty motion-reveal" id="spotlightPromoEmpty" hidden>
           <span aria-hidden="true">✦</span><div><strong>Promo berikutnya sedang disiapkan</strong><p>Daftar sebagai member agar lebih mudah mendapatkan kabar saat promo baru tersedia.</p></div><a href="akun.html?mode=register">Gabung sebagai member</a>
         </article>
       </div>
@@ -120,9 +147,9 @@
 
   <!-- HERO -->
   <section class="hero" id="beranda">
-    <div class="hero-content">
+    <div class="hero-content motion-hero">
       <span class="hero-label">Since 2022</span>
-      <h1 class="hero-title">Elegan untuk Setiap Momen</h1>
+      <h1 class="hero-title">Elegan untuk<span class="hero-title-accent">Setiap Momen</span></h1>
       <p class="hero-sub">
         Temukan koleksi kami dengan desain anggun dan elegan, serta
         pilihan warna yang menawan untuk menemani berbagai momen Anda.
@@ -137,7 +164,7 @@
 
   <!-- KOLEKSI PRODUK -->
   <section class="section" id="produk">
-    <div class="section-header">
+    <div class="section-header motion-reveal">
       <span class="section-label">Koleksi kami</span>
       <h2>Gamis Mewah & Elegan</h2>
       <p>
@@ -159,7 +186,7 @@
     </div>
 
     <div class="keunggulan-grid">
-      <article class="keunggulan-card">
+      <article class="keunggulan-card motion-reveal">
         <div class="keunggulan-icon" aria-hidden="true">✦</div>
         <h3>Desain anggun</h3>
         <p>
@@ -167,13 +194,13 @@
         </p>
       </article>
 
-      <article class="keunggulan-card">
+      <article class="keunggulan-card motion-reveal">
         <div class="keunggulan-icon" aria-hidden="true">⟳</div>
         <h3>Pilihan warna menarik</h3>
         <p>Temukan warna yang sesuai dengan selera dan momen Anda.</p>
       </article>
 
-      <article class="keunggulan-card">
+      <article class="keunggulan-card motion-reveal">
         <div class="keunggulan-icon" aria-hidden="true">◈</div>
         <h3>Belanja mudah</h3>
         <p>
@@ -181,7 +208,7 @@
         </p>
       </article>
 
-      <article class="keunggulan-card">
+      <article class="keunggulan-card motion-reveal">
         <div class="keunggulan-icon" aria-hidden="true">⨄</div>
         <h3>3 pilihan harga</h3>
         <p>
@@ -264,7 +291,7 @@
 
   <!-- TESTIMONI -->
   <section class="section section-alt" id="testimoni">
-    <div class="section-header">
+    <div class="section-header motion-reveal">
       <span class="section-label">Kata pelanggan</span>
       <h2>Pengalaman Pelanggan Kami</h2>
       <p>
@@ -336,7 +363,7 @@
     </div>
 
     <div class="kontak-grid">
-      <a href="https://wa.me/6282318500057" class="kontak-card" target="_blank" rel="noopener noreferrer">
+      <a href="https://wa.me/6282318500057" class="kontak-card motion-reveal" target="_blank" rel="noopener noreferrer">
         <div class="kontak-icon" aria-hidden="true">WA</div>
         <div>
           <h3>WhatsApp</h3>
@@ -344,7 +371,7 @@
         </div>
       </a>
 
-      <a href="https://instagram.com/urbannattier" class="kontak-card" target="_blank" rel="noopener noreferrer">
+      <a href="https://instagram.com/urbannattier" class="kontak-card motion-reveal" target="_blank" rel="noopener noreferrer">
         <div class="kontak-icon" aria-hidden="true">IG</div>
         <div>
           <h3>Instagram</h3>
@@ -360,6 +387,7 @@
     <p class="footer-copy">
       &copy; 2026 Urbann Attier. All rights reserved.
     </p>
+    <p class="footer-copy"><a href="kebijakan-privasi.html">Kebijakan Privasi</a></p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -367,6 +395,7 @@
   <script src="main.js"></script>
   <script src="cart-store.js"></script>
   <script src="welcome.js"></script>
+  <a class="floating-chat-link" href="https://wa.me/6282318500057?text=Halo%20Urbann%20Attier%2C%20saya%20ingin%20bertanya." target="_blank" rel="noopener noreferrer" aria-label="Chat Urbann Attier melalui WhatsApp"><span class="floating-chat-icon" aria-hidden="true">✆</span><span>Chat WhatsApp</span></a>
 </body>
 
 </html>
