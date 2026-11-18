@@ -331,7 +331,9 @@ async function sendPromoCampaign() {
   const button = $("#sendPromoCampaignButton");
   button.textContent = "Mengirim…";
   updatePromoEmailSendState();
-  setStatus("#promoEmailStatus", "Mengirim kampanye. Jangan tutup halaman sampai hasil pengiriman tampil.");
+  setStatus("#promoEmailStatus", imageFile
+    ? "Mengunggah gambar lalu mengirim kampanye. Jangan tutup halaman sampai hasil pengiriman tampil."
+    : "Mengirim kampanye. Jangan tutup halaman sampai hasil pengiriman tampil.");
   try {
     const imageUrl = imageFile ? await uploadPromoEmailImage(imageFile) : "";
     const result = await invokePromoEmailFunction({ action: "send", subject, message, imageUrl, buttonText, buttonUrl });
