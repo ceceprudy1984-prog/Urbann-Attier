@@ -30,6 +30,7 @@ const state = {
   homepageSettings: null,
   promoAudienceCount: null,
   promoEmailBusy: false,
+  promoEmailImageFile: null,
   busy: false,
 };
 
@@ -243,6 +244,40 @@ async function loadPromoEmailAudience() {
   updatePromoEmailSendState();
 }
 
+function handlePromoEmailImageChange(event) {
+  const input = event.currentTarget;
+  const file = input.files?.[0] || null;
+  if (!file) {
+    state.promoEmailImageFile = null;
+    $("#promoEmailImageFileName").textContent = "Pilih gambar dari perangkat ini. JPG, PNG, WebP, atau AVIF; maksimal 10 MB. Gambar diunggah otomatis saat email dikirim.";
+    return;
+  }
+  const supportedTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+  if (!supportedTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+    input.value = "";
+    state.promoEmailImageFile = null;
+    $("#promoEmailImageFileName").textContent = "Pilih JPG, PNG, WebP, atau AVIF maksimal 10 MB.";
+    setStatus("#promoEmailStatus", "Gambar harus berformat JPG, PNG, WebP, atau AVIF dan berukuran maksimal 10 MB.", true);
+    return;
+  }
+  state.promoEmailImageFile = file;
+  $("#promoEmailImageFileName").textContent = `Dipilih: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB). Gambar akan diunggah saat email dikirim.`;
+  setStatus("#promoEmailStatus", "Gambar siap digunakan di email.");
+}
+
+async function uploadPromoEmailImage(file) {
+  if (!file) return "";
+  const extension = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" })[file.type];
+  if (!extension || file.size > 10 * 1024 * 1024) throw new Error("Gunakan gambar JPG, PNG, WebP, atau AVIF maksimal 10 MB.");
+  const token = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+  const path = `promo-email/${Date.now()}-${token}.${extension}`;
+  const { error } = await supabaseClient.storage.from("product-images").upload(path, file, {
+    cacheControl: "3600", upsert: false, contentType: file.type,
+  });
+  if (error) throw new Error(`Gambar belum dapat diunggah: ${error.message}`);
+  return imagePublicUrl(path);
+}
+
 function formatDateTime(value) {
   if (!value) return "—";
   const date = new Date(value);
@@ -271,7 +306,7 @@ async function sendPromoCampaign() {
   if (state.promoEmailBusy) return;
   const subject = $("#promoEmailSubject").value.trim();
   const message = $("#promoEmailMessage").value.trim();
-  const imageUrl = $("#promoEmailImageUrl").value.trim();
+  const imageFile = state.promoEmailImageFile;
   const buttonText = $("#promoEmailButtonText").value.trim();
   const buttonUrl = $("#promoEmailButtonUrl").value.trim();
   if (!subject || !message || !state.promoAudienceCount) return;
@@ -280,7 +315,7 @@ async function sendPromoCampaign() {
     return;
   }
   try {
-    for (const [label, value] of [["Gambar", imageUrl], ["Tautan tombol", buttonUrl]]) {
+    for (const [label, value] of [["Tautan tombol", buttonUrl]]) {
       if (!value) continue;
       const url = new URL(value);
       if (!["https:", "http:"].includes(url.protocol)) throw new Error(`${label} harus memakai alamat website http:// atau https://.`);
@@ -298,6 +333,7 @@ async function sendPromoCampaign() {
   updatePromoEmailSendState();
   setStatus("#promoEmailStatus", "Mengirim kampanye. Jangan tutup halaman sampai hasil pengiriman tampil.");
   try {
+    const imageUrl = imageFile ? await uploadPromoEmailImage(imageFile) : "";
     const result = await invokePromoEmailFunction({ action: "send", subject, message, imageUrl, buttonText, buttonUrl });
     $("#promoEmailRecipientCount").textContent = `${Number(result.recipientCount || 0).toLocaleString("id-ID")} member`;
     state.promoAudienceCount = Number(result.recipientCount || 0);
@@ -308,7 +344,9 @@ async function sendPromoCampaign() {
     }
     $("#promoEmailSubject").value = "";
     $("#promoEmailMessage").value = "";
-    $("#promoEmailImageUrl").value = "";
+    $("#promoEmailImageFile").value = "";
+    $("#promoEmailImageFileName").textContent = "Pilih gambar dari perangkat ini. JPG, PNG, WebP, atau AVIF; maksimal 10 MB. Gambar diunggah otomatis saat email dikirim.";
+    state.promoEmailImageFile = null;
     $("#promoEmailButtonText").value = "";
     $("#promoEmailButtonUrl").value = "";
     await loadPromoEmailHistory();
@@ -1635,6 +1673,7 @@ $("#refreshOrdersButton").addEventListener("click", async () => {
 $("#refreshMembersButton").addEventListener("click", loadMembers);
 $("#refreshPromoAudienceButton").addEventListener("click", loadPromoEmailAudience);
 $("#sendPromoCampaignButton").addEventListener("click", sendPromoCampaign);
+$("#promoEmailImageFile").addEventListener("change", handlePromoEmailImageChange);
 $("#promoEmailSubject").addEventListener("input", updatePromoEmailSendState);
 $("#promoEmailMessage").addEventListener("input", updatePromoEmailSendState);
 $("#memberSearch").addEventListener("input", () => {
