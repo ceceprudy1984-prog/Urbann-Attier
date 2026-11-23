@@ -11,24 +11,108 @@ function hargaRupiah(nilai) {
   return nilai == null ? "Segera tersedia" : `Rp ${nilai.toLocaleString("id-ID")}`;
 }
 
+function setMeta(selector, attribute, value) {
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement("meta");
+    element.setAttribute(attribute, "");
+    document.head.appendChild(element);
+  }
+  element.setAttribute(attribute, value);
+}
+
+function deskripsiSeoProduk() {
+  if (!produkAktif) return "";
+  return [produkAktif.deskripsi, produkAktif.detailProduk?.Bahan, produkAktif.detailProduk?.Model]
+    .map((value) => String(value || "").trim())
+    .filter((value) => value && value.toLocaleLowerCase("id-ID") !== "deskripsi produk akan ditambahkan.")
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .slice(0, 300);
+}
+
+function perbaruiDataTerstruktur(productUrl) {
+  const existing = document.getElementById("productStructuredData");
+  if (!produkAktif) {
+    existing?.remove();
+    return;
+  }
+
+  const images = [...new Set(produkAktif.varianWarna.flatMap((variant) => variant.fotos?.length ? variant.fotos : [variant.foto]).filter(Boolean))]
+    .map((image) => detailSafeImageUrl(image))
+    .filter(Boolean)
+    .map((image) => new URL(image, window.location.href).href);
+  const allStockValues = produkAktif.varianWarna.flatMap((variant) => Object.values(variant.stok || {}));
+  const stockValues = allStockValues.filter((stock) => typeof stock === "number");
+  const productDescription = deskripsiSeoProduk();
+  const product = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: produkAktif.nama,
+    brand: { "@type": "Brand", name: "Urbann Attier" },
+    url: productUrl.href,
+  };
+  if (produkAktif.sku) product.sku = produkAktif.sku;
+  if (produkAktif.kategori) product.category = produkAktif.kategori;
+  if (productDescription) product.description = productDescription;
+  if (images.length) product.image = images;
+
+  if (Number.isFinite(Number(produkAktif.harga)) && produkAktif.harga != null) {
+    const offer = {
+      "@type": "Offer",
+      url: productUrl.href,
+      priceCurrency: "IDR",
+      price: String(Number(produkAktif.harga)),
+      itemCondition: "https://schema.org/NewCondition",
+    };
+    if (stockValues.length && stockValues.length === allStockValues.length) {
+      offer.availability = stockValues.some((stock) => stock > 0)
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock";
+    }
+    product.offers = offer;
+  }
+
+  const script = existing || document.head.appendChild(document.createElement("script"));
+  script.id = "productStructuredData";
+  script.type = "application/ld+json";
+  script.textContent = JSON.stringify(product);
+}
+
 function perbaruiJudulProduk() {
   const heading = document.getElementById("namaProduk");
   const metaDescription = document.querySelector('meta[name="description"]');
+  const canonical = document.querySelector('link[rel="canonical"]');
 
   if (!produkAktif) {
     document.title = "Produk tidak ditemukan | Urbann Attier";
     if (heading) heading.textContent = "Produk tidak ditemukan";
+    setMeta('meta[name="robots"]', "name", "noindex, follow");
     if (metaDescription) {
       metaDescription.content = "Produk yang Anda cari tidak tersedia di Urbann Attier.";
     }
     return;
   }
 
+  const productUrl = new URL(`/produk/${encodeURIComponent(produkAktif.slug || produkAktif.id)}/`, "https://urbannattier.com");
+  const canonicalUrl = canonical || document.head.appendChild(document.createElement("link"));
+  canonicalUrl.rel = "canonical";
+  canonicalUrl.href = productUrl.href;
   document.title = `${produkAktif.nama} | Gamis Wanita Urbann Attier`;
   if (heading) heading.textContent = produkAktif.nama;
+  const description = deskripsiSeoProduk() || `Lihat ${produkAktif.nama}, koleksi gamis Urbann Attier. Periksa pilihan warna, ukuran, dan harga yang tersedia.`;
   if (metaDescription) {
-    metaDescription.content = `Lihat ${produkAktif.nama} dari Urbann Attier. Pilih warna dan ukuran, serta lihat harga dan informasi produk.`;
+    metaDescription.content = description;
   }
+  setMeta('meta[property="og:type"]', "property", "product");
+  setMeta('meta[property="og:title"]', "property", document.title);
+  setMeta('meta[property="og:description"]', "property", description);
+  setMeta('meta[property="og:url"]', "property", productUrl.href);
+  const previewImage = produkAktif.varianWarna[0]?.foto;
+  const safePreviewImage = previewImage ? detailSafeImageUrl(previewImage) : "";
+  if (safePreviewImage) setMeta('meta[property="og:image"]', "property", new URL(safePreviewImage, window.location.href).href);
+  setMeta('meta[name="twitter:card"]', "name", previewImage ? "summary_large_image" : "summary");
+  perbaruiDataTerstruktur(productUrl);
 }
 
 function renderDetail() {
@@ -36,7 +120,7 @@ function renderDetail() {
 
   if (!produkAktif) {
     detailContainer.innerHTML = `
-      <a class="detail-kembali" href="index.html#produk">&larr; Kembali ke koleksi</a>
+      <a class="detail-kembali" href="/index.html#produk">&larr; Kembali ke koleksi</a>
       <h1 class="detail-page-title">Produk tidak ditemukan</h1>
       <p>Produk yang Anda cari tidak tersedia. Silakan kembali ke halaman koleksi.</p>
     `;
@@ -98,7 +182,7 @@ function renderDetail() {
     .join("");
 
   detailContainer.innerHTML = `
-    <a class="detail-kembali" href="index.html#produk">&larr; Kembali ke koleksi</a>
+    <a class="detail-kembali" href="/index.html#produk">&larr; Kembali ke koleksi</a>
     <h1 id="namaProduk" class="detail-page-title">${detailEscapeHtml(produkAktif.nama)}</h1>
 
     <div class="detail-wrapper">
@@ -200,7 +284,7 @@ function renderDetail() {
           <button class="btn btn-secondary btn-checkout-now" id="btnCheckoutSekarang" type="button">Checkout sekarang</button>
         </div>
         <p class="cart-action-status" id="cartActionStatus" role="status" aria-live="polite"></p>
-        <a class="cart-view-link" href="keranjang.html">
+        <a class="cart-view-link" href="/keranjang.html">
           Lihat keranjang (<span class="cart-count" data-cart-count>0</span>)
         </a>
         <p class="detail-payment-note">
@@ -289,7 +373,7 @@ function pasangEventDetail() {
   jumlahPembelian.addEventListener("change", perbaruiRingkasanPembelian);
   detailContainer.querySelector("#btnTambahKeranjang").addEventListener("click", tambahKeKeranjang);
   detailContainer.querySelector("#btnCheckoutSekarang").addEventListener("click", () => {
-    if (tambahKeKeranjang()) window.location.href = "checkout.html";
+    if (tambahKeKeranjang()) window.location.href = "/checkout.html";
   });
   perbaruiRingkasanPembelian();
   UrbannCart.updateBadges();
@@ -390,8 +474,11 @@ function perbaruiStok() {
 }
 
 window.URBANN_PRODUCTS_READY.then((products) => {
-  const idProduk = Number(new URLSearchParams(window.location.search).get("id"));
-  produkAktif = products.find((item) => item.id === idProduk) || null;
+  const params = new URLSearchParams(window.location.search);
+  const pathMatch = window.location.pathname.match(/^\/produk\/([^/]+)\/?$/);
+  const productSlug = params.get("slug") || (pathMatch ? decodeURIComponent(pathMatch[1]) : null);
+  const idProduk = Number(params.get("id") || productSlug);
+  produkAktif = products.find((item) => productSlug ? item.slug === productSlug : item.id === idProduk) || null;
   warnaAktif = produkAktif?.varianWarna[0] || null;
   renderDetail();
 }).catch(() => {

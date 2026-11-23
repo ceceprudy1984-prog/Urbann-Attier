@@ -175,11 +175,25 @@ button:focus-visible {
   box-shadow: 0 8px 24px rgb(0 0 0 / 22%);
   font-weight: 700;
   text-decoration: none;
-  transition: transform .18s ease, background-color .18s ease;
+  animation: hero-cta-pulse 2.6s ease-in-out 1.1s infinite;
+  transition: background-color .18s ease;
 }
 
-.floating-chat-link:hover { transform: translateY(-2px); background: #117744; }
+.floating-chat-link:hover { background: #117744; }
 .floating-chat-icon { display: grid; width: 25px; height: 25px; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-size: 14px; line-height: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-chat-link { animation: none; }
+}
+
+@media (max-width: 768px) {
+  .floating-chat-link { animation: floating-chat-mobile-pulse 2.4s ease-in-out infinite !important; }
+}
+
+@keyframes floating-chat-mobile-pulse {
+  0%, 100% { box-shadow: 0 8px 24px rgb(0 0 0 / 22%), 0 0 0 0 rgb(22 139 80 / 0%); }
+  50% { box-shadow: 0 8px 24px rgb(0 0 0 / 22%), 0 0 0 8px rgb(22 139 80 / 22%); }
+}
 
 @media (max-width: 480px) {
   .floating-chat-link { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); min-height: 48px; padding: 0 16px; font-size: 14px; }

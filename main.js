@@ -28,7 +28,7 @@ window.urbannEscapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch
 window.urbannSafeImageUrl = (value) => {
   if (!value) return "";
   try {
-    const url = new URL(value, window.location.href);
+    const url = new URL(value, new URL("/", window.location.href));
     return ["http:", "https:", "file:"].includes(url.protocol) ? url.href : "";
   } catch {
     return "";
@@ -167,7 +167,7 @@ function renderProducts(searchTerm = "") {
         <div class="produk-info">
           <h3 class="produk-nama">${escapeHtml(item.nama)}</h3>
           <p class="produk-harga">${formatRupiah(item.harga)}</p>
-          <a href="detail-produk.html?id=${encodeURIComponent(item.id)}" class="btn-detail">Lihat Detail</a>
+          <a href="/produk/${encodeURIComponent(item.slug)}/" class="btn-detail">Lihat Detail</a>
         </div>
       </article>`;
     }).join("")
@@ -182,7 +182,7 @@ function renderSpotlightProductCard(item, badge) {
     <div class="produk-info">
       <h3 class="produk-nama">${escapeHtml(item.nama)}</h3>
       <p class="produk-harga">${formatRupiah(item.harga)}</p>
-      <a href="detail-produk.html?id=${encodeURIComponent(item.id)}" class="btn-detail">Lihat Detail</a>
+      <a href="/produk/${encodeURIComponent(item.slug)}/" class="btn-detail">Lihat Detail</a>
     </div>
   </article>`;
 }
@@ -302,6 +302,9 @@ function mapCatalog(products, variants, images, sizes, inventory) {
     const productSizes = sizes.filter((size) => size.product_id === product.id);
     return {
       id: product.id,
+      slug: product.slug,
+      sku: product.sku,
+      kategori: product.category,
       nama: product.name,
       createdAt: product.created_at,
       harga: product.price_retail,
@@ -352,7 +355,7 @@ async function loadCatalog() {
   window.urbannSupabaseClient = publicSupabaseClient;
   const [productsResult, settingsResult] = await Promise.all([
     publicSupabaseClient.from("products")
-      .select("id, name, slug, category, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order, created_at")
+      .select("id, sku, name, slug, category, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order, created_at")
       .eq("is_active", true).order("sort_order", { ascending: true }).order("name", { ascending: true }),
     publicSupabaseClient.from("store_public_settings").select("packaging_fee").eq("id", 1).maybeSingle(),
   ]);

@@ -5,10 +5,8 @@
   // Jeda sebelum panel benefit muncul setelah animasi pembuka selesai.
   const WELCOME_DIALOG_DELAY_MS = 260;
   const dismissedKey = "urbann-attier-member-welcome-v1";
-  const config = window.URBANN_SUPABASE_CONFIG;
-  const authClient = config?.url && config?.publishableKey && window.supabase?.createClient
-    ? window.supabase.createClient(config.url, config.publishableKey)
-    : null;
+  // Reuse the homepage client so auth helpers share a single session instance.
+  const authClient = window.urbannSupabaseClient || null;
 
   let alreadyDismissed = false;
   try {

@@ -202,9 +202,28 @@ body.account-body {
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+  animation: hero-cta-pulse 2.6s ease-in-out 1.1s infinite;
 }
 .floating-chat-link:hover { background: #117744; }
 .floating-chat-icon { display: grid; width: 24px; height: 24px; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-size: 13px; line-height: 1; }
+
+@keyframes hero-cta-pulse {
+  0%, 100% { transform: scale(1); text-shadow: 0 0 6px rgb(227 195 133 / 32%); }
+  50% { transform: scale(1.055); text-shadow: 0 0 15px rgb(247 229 192 / 82%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-chat-link { animation: none; }
+}
+
+@media (max-width: 768px) {
+  .floating-chat-link { animation: floating-chat-mobile-pulse 2.4s ease-in-out infinite !important; }
+}
+
+@keyframes floating-chat-mobile-pulse {
+  0%, 100% { box-shadow: 0 8px 24px rgb(0 0 0 / 22%), 0 0 0 0 rgb(22 139 80 / 0%); }
+  50% { box-shadow: 0 8px 24px rgb(0 0 0 / 22%), 0 0 0 8px rgb(22 139 80 / 22%); }
+}
 
 @media (max-width: 480px) {
   .account-shell { width: min(100% - 20px, 520px); padding-top: 16px; }
