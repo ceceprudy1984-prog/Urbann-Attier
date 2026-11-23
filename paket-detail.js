@@ -4,6 +4,7 @@ const detailContainer = document.getElementById("detailProduk");
 let warnaAktif = null;
 let ukuranAktif = "";
 let fotoAktifIndex = 0;
+let pelacakanTambahKeranjangTerakhir = Promise.resolve(false);
 const trackedProductViews = new Set();
 const detailEscapeHtml = window.urbannEscapeHtml || ((value) => String(value ?? ""));
 const detailSafeImageUrl = window.urbannSafeImageUrl || ((value) => value || "");
@@ -128,7 +129,7 @@ function renderDetail() {
     return;
   }
 
-  if (!trackedProductViews.has(produkAktif.id)) {
+  if (!window.urbannStaticProductViewTracked && !trackedProductViews.has(produkAktif.id)) {
     const item = UrbannCart.analyticsItem(produkAktif, { mode: "ecer", quantity: 1 });
     if (item) {
       window.urbannTrack?.("view_item", {
@@ -385,8 +386,10 @@ function pasangEventDetail() {
   });
   jumlahPembelian.addEventListener("change", perbaruiRingkasanPembelian);
   detailContainer.querySelector("#btnTambahKeranjang").addEventListener("click", tambahKeKeranjang);
-  detailContainer.querySelector("#btnCheckoutSekarang").addEventListener("click", () => {
-    if (tambahKeKeranjang()) window.location.href = "/checkout.html";
+  detailContainer.querySelector("#btnCheckoutSekarang").addEventListener("click", async () => {
+    if (!tambahKeKeranjang()) return;
+    await pelacakanTambahKeranjangTerakhir;
+    window.location.href = "/checkout.html";
   });
   perbaruiRingkasanPembelian();
   UrbannCart.updateBadges();
@@ -407,6 +410,7 @@ function tambahKeKeranjang() {
     size: ukuranAktif,
     quantity: jumlah,
   });
+  pelacakanTambahKeranjangTerakhir = hasil.analyticsTracking || Promise.resolve(false);
 
   detailContainer.querySelector("#cartActionStatus").textContent = hasil.message;
   UrbannCart.updateBadges();

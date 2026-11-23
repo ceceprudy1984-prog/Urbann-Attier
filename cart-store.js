@@ -136,11 +136,16 @@ const UrbannCart = (() => {
     saveItems(items);
     const analyticsLineItem = analyticsItem(product, item);
     if (analyticsLineItem) {
-      window.urbannTrack?.("add_to_cart", {
+      const analyticsTracking = window.urbannTrack?.("add_to_cart", {
         currency: "IDR",
         value: analyticsLineItem.price * analyticsLineItem.quantity,
         items: [analyticsLineItem],
       });
+      return {
+        ok: true,
+        message: `${product.nama} ditambahkan ke keranjang.`,
+        analyticsTracking: analyticsTracking || Promise.resolve(false),
+      };
     }
     return { ok: true, message: `${product.nama} ditambahkan ke keranjang.` };
   }
