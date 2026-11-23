@@ -134,6 +134,14 @@ const UrbannCart = (() => {
     if (!stockCheck.ok) return stockCheck;
 
     saveItems(items);
+    const analyticsLineItem = analyticsItem(product, item);
+    if (analyticsLineItem) {
+      window.urbannTrack?.("add_to_cart", {
+        currency: "IDR",
+        value: analyticsLineItem.price * analyticsLineItem.quantity,
+        items: [analyticsLineItem],
+      });
+    }
     return { ok: true, message: `${product.nama} ditambahkan ke keranjang.` };
   }
 
@@ -180,6 +188,21 @@ const UrbannCart = (() => {
     };
   }
 
+  function analyticsItem(product, item) {
+    if (!product || !item) return null;
+    const price = pricing(product, item).unitPrice;
+    if (!Number.isFinite(Number(price)) || price == null) return null;
+    const variant = [item.color, item.size, item.mode].filter(Boolean).join(" / ");
+    return {
+      item_id: String(product.sku || product.id),
+      item_name: product.nama,
+      ...(product.kategori ? { item_category: product.kategori } : {}),
+      ...(variant ? { item_variant: variant } : {}),
+      price: Number(price),
+      quantity: Number(item.quantity) || 1,
+    };
+  }
+
   function description(product, item) {
     if (item.mode === "seri-warna") {
       return `${item.quantity / product.varianWarna.length} seri warna · ukuran ${item.size} · ${product.varianWarna.map((color) => color.nama).join(", ")}`;
@@ -222,6 +245,7 @@ const UrbannCart = (() => {
     clear,
     validateItems,
     pricing,
+    analyticsItem,
     description,
     formatRupiah,
     findProduct,

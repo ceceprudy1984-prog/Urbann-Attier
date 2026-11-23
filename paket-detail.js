@@ -4,6 +4,7 @@ const detailContainer = document.getElementById("detailProduk");
 let warnaAktif = null;
 let ukuranAktif = "";
 let fotoAktifIndex = 0;
+const trackedProductViews = new Set();
 const detailEscapeHtml = window.urbannEscapeHtml || ((value) => String(value ?? ""));
 const detailSafeImageUrl = window.urbannSafeImageUrl || ((value) => value || "");
 
@@ -125,6 +126,18 @@ function renderDetail() {
       <p>Produk yang Anda cari tidak tersedia. Silakan kembali ke halaman koleksi.</p>
     `;
     return;
+  }
+
+  if (!trackedProductViews.has(produkAktif.id)) {
+    const item = UrbannCart.analyticsItem(produkAktif, { mode: "ecer", quantity: 1 });
+    if (item) {
+      window.urbannTrack?.("view_item", {
+        currency: "IDR",
+        value: item.price,
+        items: [item],
+      });
+      trackedProductViews.add(produkAktif.id);
+    }
   }
 
   const foto = warnaAktif?.foto || "";

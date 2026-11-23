@@ -26,6 +26,7 @@ let checkoutAuthReady = false;
 let checkoutMemberSession = null;
 let paymentRetryAvailable = false;
 let serverPaymentSummary = null;
+let beginCheckoutSent = false;
 
 function escapeCheckoutHtml(value) {
   return window.urbannEscapeHtml(String(value ?? ""));
@@ -232,6 +233,20 @@ function renderCheckout() {
     <p class="checkout-total-row"><span>Jumlah produk</span><strong>${items.reduce((sum, item) => sum + item.quantity, 0)} pcs</strong></p>
     <p class="checkout-total-row"><span>Subtotal produk</span><strong>${allPricesAvailable ? UrbannCart.formatRupiah(checkoutSubtotal) : "Harga belum lengkap"}</strong></p>
   `;
+
+  if (!beginCheckoutSent && allPricesAvailable) {
+    const analyticsItems = items
+      .map((item) => UrbannCart.analyticsItem(UrbannCart.findProduct(item.productId), item))
+      .filter(Boolean);
+    if (analyticsItems.length) {
+      window.urbannTrack?.("begin_checkout", {
+        currency: "IDR",
+        value: analyticsItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+        items: analyticsItems,
+      });
+      beginCheckoutSent = true;
+    }
+  }
 
   const currentWeight = getItemsWeight(items);
   document.querySelector("#shippingPackageWeight").textContent =

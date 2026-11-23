@@ -134,6 +134,7 @@ function productHtml(product) {
     <script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>
     <link rel="icon" type="image/x-icon" href="/assets/Urban%20Attier.jpg" />
     <link rel="stylesheet" href="/style.css" />
+    <script src="/analytics.js"></script>
   </head>
   <body class="halaman-detail">
     <main class="detail-section" id="detailProduk">
