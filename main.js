@@ -18,8 +18,11 @@ if (!onAccountPage && isPasswordRecoveryRedirect) {
 
 const hamburger = document.querySelector(".hamburger-btn");
 const navLinks = document.querySelector(".nav-links");
+const navCategoryItem = document.querySelector(".nav-category-item");
+const navCategoryMenu = document.querySelector("#navCategoryMenu");
 let BIAYA_PENGEMASAN = 5000;
 let produk = [];
+let closeMobileNavigation = () => {};
 
 window.urbannProducts = produk;
 window.urbannEscapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -43,7 +46,12 @@ if (hamburger && navLinks) {
     hamburger.setAttribute("aria-expanded", String(open));
     hamburger.setAttribute("aria-label", open ? "Tutup menu" : "Buka menu");
     document.body.classList.toggle("nav-open", open);
+    if (!open) {
+      navCategoryItem?.classList.remove("is-open");
+      document.querySelector("[data-category-menu-toggle]")?.setAttribute("aria-expanded", "false");
+    }
   };
+  closeMobileNavigation = () => setMenuOpen(false);
 
   hamburger.addEventListener("click", () => setMenuOpen(hamburger.getAttribute("aria-expanded") !== "true"));
   navContent?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMenuOpen(false)));
@@ -59,6 +67,7 @@ updateNavbarScroll();
 const grid = document.getElementById("produkGrid");
 const productSearch = document.querySelector("#productSearch");
 const productSearchInput = document.querySelector("#productSearchInput");
+const productCategoryFilters = document.querySelector("#productCategoryFilters");
 const escapeHtml = window.urbannEscapeHtml;
 const safeImageUrl = window.urbannSafeImageUrl;
 let publicSupabaseClient = null;
@@ -67,6 +76,8 @@ let bestsellerProductIds = [];
 let bestsellerLoadFailed = false;
 let activeSpotlight = "new";
 let homepageSpotlightSettings = null;
+let catalogCategories = [];
+let activeProductCategoryId = "all";
 
 const spotlightSettingColumns = "homepage_launch_active, homepage_launch_title, homepage_launch_message, homepage_launch_image_url, homepage_launch_at, homepage_promo_active, homepage_promo_badge, homepage_promo_title, homepage_promo_description, homepage_promo_image_url, homepage_promo_cta_label, homepage_promo_cta_url, homepage_promo_starts_at, homepage_promo_ends_at";
 
@@ -155,9 +166,22 @@ motionPreference?.addEventListener?.("change", configureMotion);
 function renderProducts(searchTerm = "") {
   if (!grid) return;
   const query = searchTerm.trim().toLocaleLowerCase("id-ID");
-  const filtered = produk.filter((item) =>
-    [item.nama, ...(item.varianWarna || []).map((color) => color.nama)]
-      .join(" ").toLocaleLowerCase("id-ID").includes(query));
+  const selectedCategory = catalogCategories.find((category) => category.id === activeProductCategoryId);
+  const categoryIds = new Set();
+  if (selectedCategory) {
+    categoryIds.add(selectedCategory.id);
+    const addDescendants = (parentId) => catalogCategories.filter((category) => category.parent_id === parentId)
+      .forEach((category) => { categoryIds.add(category.id); addDescendants(category.id); });
+    addDescendants(selectedCategory.id);
+  }
+  const filtered = produk.filter((item) => {
+    const matchesCategory = activeProductCategoryId === "all"
+      || categoryIds.has(item.categoryId)
+      || (!item.categoryId && selectedCategory?.slug === "gamis" && item.kategori?.toLocaleLowerCase("id-ID") === "gamis");
+    const matchesSearch = [item.nama, ...(item.varianWarna || []).map((color) => color.nama)]
+      .join(" ").toLocaleLowerCase("id-ID").includes(query);
+    return matchesCategory && matchesSearch;
+  });
 
   grid.innerHTML = filtered.length
     ? filtered.map((item) => {
@@ -173,6 +197,32 @@ function renderProducts(searchTerm = "") {
     }).join("")
     : '<p class="produk-empty">Belum ada produk aktif di katalog. Silakan cek kembali nanti.</p>';
   observeMotionElements(grid);
+}
+
+function renderProductCategoryFilters() {
+  if (!productCategoryFilters) return;
+  const roots = catalogCategories.filter((category) => !category.parent_id);
+  const groupMarkup = roots.map((root) => {
+    const children = catalogCategories.filter((category) => category.parent_id === root.id);
+    return `<div class="product-category-group"><h3>${escapeHtml(root.name)}</h3><div class="product-category-options">
+      <button type="button" class="category-filter-button${activeProductCategoryId === root.id ? " is-active" : ""}" data-category-filter="${escapeHtml(root.id)}" aria-pressed="${activeProductCategoryId === root.id}">Semua ${escapeHtml(root.name)}</button>
+      ${children.map((category) => `<button type="button" class="category-filter-button${activeProductCategoryId === category.id ? " is-active" : ""}" data-category-filter="${escapeHtml(category.id)}" aria-pressed="${activeProductCategoryId === category.id}">${escapeHtml(category.name)}</button>`).join("")}
+    </div></div>`;
+  }).join("");
+  productCategoryFilters.innerHTML = `<div class="product-category-group"><h3>Semua koleksi</h3><div class="product-category-options"><button type="button" class="category-filter-button${activeProductCategoryId === "all" ? " is-active" : ""}" data-category-filter="all" aria-pressed="${activeProductCategoryId === "all"}">Semua produk</button></div></div>${groupMarkup}`;
+}
+
+function renderNavbarCategories() {
+  if (!navCategoryMenu) return;
+  const roots = catalogCategories.filter((category) => !category.parent_id);
+  const groups = roots.map((root) => {
+    const children = catalogCategories.filter((category) => category.parent_id === root.id);
+    return `<li class="nav-category-family">
+      <button type="button" data-category-filter="${escapeHtml(root.id)}" data-category-source="nav">Semua ${escapeHtml(root.name)}</button>
+      ${children.length ? `<ul>${children.map((category) => `<li><button type="button" data-category-filter="${escapeHtml(category.id)}" data-category-source="nav">${escapeHtml(category.name)}</button></li>`).join("")}</ul>` : ""}
+    </li>`;
+  }).join("");
+  navCategoryMenu.innerHTML = `<li><button type="button" data-category-filter="all" data-category-source="nav">Semua produk</button></li>${groups || '<li class="nav-category-loading">Belum ada kategori.</li>'}`;
 }
 
 function renderSpotlightProductCard(item, badge) {
@@ -305,6 +355,7 @@ function mapCatalog(products, variants, images, sizes, inventory) {
       slug: product.slug,
       sku: product.sku,
       kategori: product.category,
+      categoryId: product.category_id || null,
       nama: product.name,
       createdAt: product.created_at,
       harga: product.price_retail,
@@ -353,14 +404,19 @@ async function loadCatalog() {
   }
   publicSupabaseClient ||= window.supabase.createClient(config.url, config.publishableKey);
   window.urbannSupabaseClient = publicSupabaseClient;
-  const [productsResult, settingsResult] = await Promise.all([
+  const [productsResult, settingsResult, categoriesResult] = await Promise.all([
     publicSupabaseClient.from("products")
-      .select("id, sku, name, slug, category, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order, created_at")
+      .select("id, sku, name, slug, category, category_id, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order, created_at")
       .eq("is_active", true).order("sort_order", { ascending: true }).order("name", { ascending: true }),
     publicSupabaseClient.from("store_public_settings").select("packaging_fee").eq("id", 1).maybeSingle(),
+    publicSupabaseClient.from("product_categories").select("id, name, slug, parent_id, sort_order").eq("is_active", true).order("sort_order").order("name"),
   ]);
   if (productsResult.error) throw productsResult.error;
   if (settingsResult.error) throw settingsResult.error;
+  if (categoriesResult.error) throw categoriesResult.error;
+  catalogCategories = categoriesResult.data || [];
+  renderProductCategoryFilters();
+  renderNavbarCategories();
   const products = productsResult.data || [];
   BIAYA_PENGEMASAN = settingsResult.data?.packaging_fee ?? 5000;
   window.urbannPackagingFee = BIAYA_PENGEMASAN;
@@ -397,7 +453,7 @@ function scheduleCatalogRefresh() {
 
 function subscribeToCatalogChanges() {
   if (!publicSupabaseClient) return;
-  const tables = ["products", "product_variants", "product_images", "product_sizes", "inventory", "store_public_settings"];
+  const tables = ["products", "product_categories", "product_variants", "product_images", "product_sizes", "inventory", "store_public_settings"];
   let channel = publicSupabaseClient.channel("urbann-public-catalog");
   tables.forEach((table) => {
     channel = channel.on("postgres_changes", { event: "*", schema: "public", table }, scheduleCatalogRefresh);
@@ -437,6 +493,40 @@ productSearch?.addEventListener("submit", (event) => {
 });
 productSearchInput?.addEventListener("input", () => {
   if (!productSearchInput.value.trim()) renderProducts();
+});
+document.addEventListener("click", (event) => {
+  const menuToggle = event.target.closest("[data-category-menu-toggle]");
+  if (menuToggle) {
+    const open = menuToggle.getAttribute("aria-expanded") !== "true";
+    navCategoryItem?.classList.toggle("is-open", open);
+    menuToggle.setAttribute("aria-expanded", String(open));
+    return;
+  }
+  const button = event.target.closest("[data-category-filter]");
+  if (!button) {
+    if (!event.target.closest(".nav-category-item")) {
+      navCategoryItem?.classList.remove("is-open");
+      document.querySelector("[data-category-menu-toggle]")?.setAttribute("aria-expanded", "false");
+    }
+    return;
+  }
+  activeProductCategoryId = button.dataset.categoryFilter;
+  renderProductCategoryFilters();
+  renderProducts(productSearchInput?.value || "");
+  const category = catalogCategories.find((item) => item.id === activeProductCategoryId);
+  if (category) window.urbannTrack?.("select_content", { content_type: "product_category", item_id: category.slug, item_name: category.name });
+  if (button.dataset.categorySource === "nav") {
+    navCategoryItem?.classList.remove("is-open");
+    document.querySelector("[data-category-menu-toggle]")?.setAttribute("aria-expanded", "false");
+    closeMobileNavigation();
+    document.querySelector("#produk")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  navCategoryItem?.classList.remove("is-open");
+  document.querySelector("[data-category-menu-toggle]")?.setAttribute("aria-expanded", "false");
 });
 
 document.querySelectorAll("[data-spotlight-tab]").forEach((button) => {

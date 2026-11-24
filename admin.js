@@ -8,6 +8,7 @@ const $ = (selector) => document.querySelector(selector);
 const state = {
   user: null,
   products: [],
+  categories: [],
   orders: [],
   members: [],
   membersTotal: 0,
@@ -1186,6 +1187,7 @@ function renderProducts() {
       <button class="button button-small button-danger" type="button" data-delete-product="${product.id}">Hapus</button></div>
       </header>
       <div class="product-catalog-summary">
+        <div><span>Kategori</span><strong>${escapeHtml(state.categories.find((category) => category.id === product.category_id)?.name || product.category || "Belum dipilih")}</strong></div>
         <div><span>Harga ecer</span><strong>${formatRupiah(product.price_retail)}</strong></div>
         <div><span>Harga serian</span><strong>${formatRupiah(product.price_series)}</strong></div>
         <div><span>Harga grosir</span><strong>${formatRupiah(product.price_wholesale)}</strong><small>Mulai ${Number(product.wholesale_min_qty) || 20} pcs</small></div>
@@ -1207,8 +1209,18 @@ function renderProducts() {
 
 async function loadProducts() {
   setStatus("#productsStatus", "Memuat produk…");
+  const { data: categoryRows, error: categoryError } = await supabaseClient.from("product_categories")
+    .select("id, name, slug, parent_id, is_active, sort_order")
+    .order("sort_order", { ascending: true }).order("name", { ascending: true });
+  if (categoryError) {
+    setStatus("#productsStatus", `Kategori gagal dimuat: ${categoryError.message}. Pastikan migrasi kategori sudah diterapkan.`, true);
+    return;
+  }
+  state.categories = categoryRows || [];
+  renderCategoryManager();
+  renderProductCategoryOptions();
   const { data, error } = await supabaseClient.from("products")
-    .select("id, sku, slug, name, category, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, is_active, sort_order")
+    .select("id, sku, slug, name, category, category_id, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, is_active, sort_order")
     .order("sort_order", { ascending: true }).order("name", { ascending: true });
   if (error) {
     setStatus("#productsStatus", `Produk gagal dimuat: ${error.message}`, true);
@@ -1242,6 +1254,112 @@ async function loadProducts() {
   renderPromoProductOptions();
   renderProducts();
   setStatus("#productsStatus", `${state.products.length} produk dimuat.`);
+}
+
+function renderCategoryManager() {
+  const parentSelect = $("#categoryParent");
+  const selectedParent = parentSelect.value;
+  const parents = state.categories.filter((category) => !category.parent_id);
+  const activeParents = parents.filter((category) => category.is_active);
+  parentSelect.innerHTML = `<option value="">Kategori utama</option>${activeParents.map((category) => `<option value="${escapeHtml(category.id)}">${escapeHtml(category.name)}</option>`).join("")}`;
+  if (activeParents.some((category) => category.id === selectedParent)) parentSelect.value = selectedParent;
+
+  const categoryList = $("#categoryManagerList");
+  categoryList.innerHTML = parents.map((parent) => {
+    const children = state.categories.filter((category) => category.parent_id === parent.id);
+    const renderRow = (category, nested = false) => `
+      <article class="category-manager-row${nested ? " is-nested" : ""}">
+        <div><strong>${escapeHtml(category.name)}</strong><small>/${escapeHtml(category.slug)}/ ${nested ? "· Subkategori" : "· Kategori utama"}</small></div>
+        <span class="status-pill ${category.is_active ? "is-on" : "is-off"}">${category.is_active ? "Aktif" : "Nonaktif"}</span>
+        <div class="category-manager-actions"><button class="button button-small" type="button" data-edit-category="${escapeHtml(category.id)}">Ubah nama</button><button class="button button-small button-quiet" type="button" data-toggle-category="${escapeHtml(category.id)}" data-active="${category.is_active}">${category.is_active ? "Nonaktifkan" : "Aktifkan"}</button></div>
+      </article>`;
+    return `${renderRow(parent)}${children.map((category) => renderRow(category, true)).join("")}`;
+  }).join("") || '<p class="empty-state">Belum ada kategori.</p>';
+
+  $("#productCategory").innerHTML = `<option value="">Pilih kategori</option>${parents.map((parent) => {
+    const children = state.categories.filter((category) => category.parent_id === parent.id);
+    const parentDisabled = parent.is_active ? "" : " disabled";
+    return `<optgroup label="${escapeHtml(parent.name)}${parent.is_active ? "" : " (Nonaktif)"}"><option value="${escapeHtml(parent.id)}"${parentDisabled}>Semua ${escapeHtml(parent.name)}</option>${children.map((category) => `<option value="${escapeHtml(category.id)}"${category.is_active && parent.is_active ? "" : " disabled"}>${escapeHtml(category.name)}${category.is_active ? "" : " (Nonaktif)"}</option>`).join("")}</optgroup>`;
+  }).join("")}`;
+}
+
+function renderProductCategoryOptions() {
+  const select = $("#productCategory");
+  const currentValue = select.value;
+  renderCategoryManager();
+  if (state.categories.some((category) => category.id === currentValue)) select.value = currentValue;
+}
+
+async function saveCategory(event) {
+  event.preventDefault();
+  const name = $("#categoryName").value.trim();
+  const slug = slugify(name);
+  const parentId = $("#categoryParent").value || null;
+  if (!name || !slug) {
+    setStatus("#categoryStatus", "Masukkan nama kategori yang valid.", true);
+    return;
+  }
+  const parent = parentId ? state.categories.find((category) => category.id === parentId) : null;
+  if (parent?.parent_id) {
+    setStatus("#categoryStatus", "Subkategori hanya dapat memiliki satu tingkat induk. Pilih kategori utama.", true);
+    return;
+  }
+  const button = $("#saveCategoryButton");
+  button.disabled = true;
+  setStatus("#categoryStatus", "Menyimpan kategori…");
+  try {
+    const { error } = await supabaseClient.from("product_categories").insert({ name, slug, parent_id: parentId });
+    if (error) throw error;
+    $("#categoryForm").reset();
+    await loadProducts();
+    setStatus("#categoryStatus", `Kategori “${name}” berhasil ditambahkan.`);
+  } catch (error) {
+    setStatus("#categoryStatus", `Kategori belum tersimpan: ${error.message}`, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function toggleCategory(categoryId, isActive) {
+  const category = state.categories.find((item) => item.id === categoryId);
+  if (!category) return;
+  if (isActive && category.parent_id && !state.categories.find((item) => item.id === category.parent_id)?.is_active) {
+    setStatus("#categoryStatus", "Aktifkan kategori induk terlebih dahulu.", true);
+    return;
+  }
+  if (!isActive && !category.parent_id && state.categories.some((item) => item.parent_id === categoryId && item.is_active)) {
+    setStatus("#categoryStatus", "Nonaktifkan semua subkategori aktif terlebih dahulu.", true);
+    return;
+  }
+  const action = isActive ? "nonaktifkan" : "aktifkan";
+  if (!window.confirm(`Yakin ingin ${action} kategori “${category.name}”? Produk tidak akan dihapus.`)) return;
+  setStatus("#categoryStatus", "Memperbarui kategori…");
+  const { error } = await supabaseClient.from("product_categories").update({ is_active: !isActive }).eq("id", categoryId);
+  if (error) {
+    setStatus("#categoryStatus", `Kategori gagal diperbarui: ${error.message}`, true);
+    return;
+  }
+  await loadProducts();
+  setStatus("#categoryStatus", `Kategori “${category.name}” berhasil diperbarui.`);
+}
+
+async function renameCategory(categoryId) {
+  const category = state.categories.find((item) => item.id === categoryId);
+  if (!category) return;
+  const name = window.prompt("Nama kategori baru:", category.name)?.trim();
+  if (!name || name === category.name) return;
+  const slug = slugify(name);
+  if (!slug) {
+    setStatus("#categoryStatus", "Nama kategori tidak menghasilkan alamat yang valid.", true);
+    return;
+  }
+  const { error } = await supabaseClient.from("product_categories").update({ name, slug }).eq("id", categoryId);
+  if (error) {
+    setStatus("#categoryStatus", `Nama kategori gagal diubah: ${error.message}`, true);
+    return;
+  }
+  await loadProducts();
+  setStatus("#categoryStatus", `Kategori berhasil diubah menjadi “${name}”.`);
 }
 
 function clearProductForm() {
@@ -1279,12 +1397,14 @@ async function openEditProduct(productId) {
   state.sizes = product.sizes;
 
   const fields = {
-    productName: "name", productSku: "sku", productCategory: "category", productSlug: "slug",
+    productName: "name", productSku: "sku", productSlug: "slug",
     priceRetail: "price_retail", priceSeries: "price_series", priceWholesale: "price_wholesale",
     wholesaleMin: "wholesale_min_qty", productMaterial: "material", productModel: "model",
     productDescription: "description", productCare: "care_notes",
   };
   Object.entries(fields).forEach(([id, key]) => { $(`#${id}`).value = product[key] ?? ""; });
+  const selectedCategoryId = product.category_id || state.categories.find((category) => !category.parent_id && category.name.toLocaleLowerCase("id-ID") === String(product.category || "").toLocaleLowerCase("id-ID"))?.id || "";
+  $("#productCategory").value = selectedCategoryId;
   $("#productActive").checked = product.is_active;
 
   const variantNames = new Map(product.variants.map((variant) => [variant.id, variant.color_name]));
@@ -1381,7 +1501,8 @@ async function saveProduct(event) {
     const productPayload = {
       name, slug,
       sku: $("#productSku").value.trim() || null,
-      category: $("#productCategory").value.trim() || null,
+      category_id: $("#productCategory").value || null,
+      category: state.categories.find((category) => category.id === $("#productCategory").value)?.name || null,
       description: $("#productDescription").value.trim(),
       material: $("#productMaterial").value.trim() || null,
       model: $("#productModel").value.trim() || null,
@@ -1769,6 +1890,13 @@ $("#orderModal").addEventListener("click", (event) => {
 });
 document.querySelectorAll("[data-admin-view]").forEach((button) => {
   button.addEventListener("click", () => setActiveView(button.dataset.adminView));
+});
+$("#categoryForm").addEventListener("submit", saveCategory);
+$("#categoryManagerList").addEventListener("click", (event) => {
+  const renameButton = event.target.closest("[data-edit-category]");
+  if (renameButton) renameCategory(renameButton.dataset.editCategory);
+  const toggleButton = event.target.closest("[data-toggle-category]");
+  if (toggleButton) toggleCategory(toggleButton.dataset.toggleCategory, toggleButton.dataset.active === "true");
 });
 $("#saveHomepageContentButton").addEventListener("click", saveHomepageContent);
 $("#homepagePromoCtaType").addEventListener("change", updatePromoDestinationControls);

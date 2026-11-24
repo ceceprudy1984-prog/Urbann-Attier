@@ -109,14 +109,22 @@
         <li><a href="#beranda">Home</a></li>
         <li><a href="#produk">Shop</a></li>
         <li><a href="#keunggulan">Brand</a></li>
-        <li><a href="#produk">Kategori</a></li>
+        <li class="nav-category-item">
+          <button class="nav-category-toggle" type="button" aria-expanded="false" aria-controls="navCategoryMenu" data-category-menu-toggle>
+            Kategori <span class="nav-category-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <ul class="nav-category-dropdown" id="navCategoryMenu" aria-label="Pilihan kategori">
+            <li><button type="button" data-category-filter="all" data-category-source="nav">Semua produk</button></li>
+            <li class="nav-category-loading">Memuat kategori…</li>
+          </ul>
+        </li>
         <li><a href="#tentang-kami">Tentang Kami</a></li>
         <li><a href="#kontak">Kontak</a></li>
         <li><a href="akun.html">Akun</a></li>
       </ul>
       <form class="nav-search" id="productSearch" role="search">
         <label class="sr-only" for="productSearchInput">Cari produk</label>
-        <input id="productSearchInput" name="q" type="search" placeholder="Cari gamis..." autocomplete="off" />
+        <input id="productSearchInput" name="q" type="search" placeholder="Cari produk..." autocomplete="off" />
         <button type="submit" aria-label="Cari produk">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="10.8" cy="10.8" r="6.8"></circle>
@@ -203,12 +211,16 @@
   <section class="section" id="produk">
     <div class="section-header motion-reveal">
       <span class="section-label">Koleksi kami</span>
-      <h2>Gamis Mewah & Elegan</h2>
+      <h2>Temukan Koleksi Pilihan</h2>
       <p>
-        Teliti sebelum membeli. Periksa deskripsi dan
-        detail ukuran sebelum memesan agar pilihan Anda sesuai.
+        Pilih kategori yang Anda cari, lalu periksa deskripsi dan
+        detail ukuran produk sebelum memesan.
       </p>
     </div>
+
+    <nav class="product-category-browser" id="productCategoryFilters" aria-label="Jelajahi kategori produk">
+      <p class="category-browser-loading">Memuat kategori…</p>
+    </nav>
 
     <div class="produk-grid" id="produkGrid">
       <p class="produk-empty">Memuat katalog produk…</p>

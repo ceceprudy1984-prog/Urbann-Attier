@@ -269,6 +269,19 @@
             </div>
             <p class="products-status" id="productsStatus" role="status" aria-live="polite"></p>
 
+            <section class="panel category-manager-panel" aria-labelledby="categoryManagerTitle">
+              <div class="panel-heading product-panel-heading">
+                <div><p class="eyebrow">STRUKTUR KATALOG</p><h2 id="categoryManagerTitle">Kategori produk</h2><p class="dashboard-note">Kategori dapat ditambah dan dinonaktifkan tanpa menghapus produk yang sudah terhubung.</p></div>
+              </div>
+              <form class="category-create-form" id="categoryForm">
+                <label class="form-field" for="categoryName"><span>Nama kategori</span><input id="categoryName" maxlength="80" placeholder="Contoh: One Set Dewasa" required /></label>
+                <label class="form-field" for="categoryParent"><span>Induk kategori</span><select id="categoryParent"><option value="">Kategori utama</option></select></label>
+                <button class="button button-primary" id="saveCategoryButton" type="submit">Tambah kategori</button>
+              </form>
+              <p class="products-status" id="categoryStatus" role="status" aria-live="polite"></p>
+              <div class="category-manager-list" id="categoryManagerList"></div>
+            </section>
+
             <section class="panel product-panel" aria-labelledby="productsTitle">
               <div class="panel-heading product-panel-heading">
                 <div><p class="eyebrow">DAFTAR KATALOG</p><h2 id="productsTitle">Semua produk</h2></div>
@@ -294,7 +307,7 @@
             <div class="form-grid">
               <div class="form-field form-field-wide"><label for="productName">Nama produk *</label><input id="productName" name="name" required maxlength="120" /></div>
               <div class="form-field"><label for="productSku">SKU (opsional)</label><input id="productSku" name="sku" maxlength="80" /></div>
-              <div class="form-field"><label for="productCategory">Kategori</label><input id="productCategory" name="category" maxlength="80" /></div>
+              <div class="form-field"><label for="productCategory">Kategori *</label><select id="productCategory" name="category_id" required><option value="">Pilih kategori</option></select><small>Atur pilihan kategori pada bagian Kategori produk di dashboard.</small></div>
               <div class="form-field form-field-wide"><label for="productSlug">Slug URL *</label><input id="productSlug" name="slug" required maxlength="140" /><small>Otomatis dibuat dari nama produk; boleh Anda ubah.</small></div>
               <div class="form-field"><label for="priceRetail">Harga ecer (Rp)</label><input id="priceRetail" name="price_retail" type="number" min="0" step="1" /></div>
               <div class="form-field"><label for="priceSeries">Harga serian (Rp)</label><input id="priceSeries" name="price_series" type="number" min="0" step="1" /></div>

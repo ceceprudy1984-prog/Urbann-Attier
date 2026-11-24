@@ -339,6 +339,28 @@ tbody tr:last-child td {
 .admin-page > .page-heading {
   margin-bottom: 22px;
 }
+.category-manager-panel { margin-bottom: 20px; }
+.category-create-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(170px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 0 20px 16px;
+}
+.category-create-form .button { min-height: 42px; }
+.category-manager-list { display: grid; padding: 0 20px 18px; }
+.category-manager-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-top: 1px solid var(--admin-line);
+}
+.category-manager-row.is-nested { margin-left: 22px; }
+.category-manager-row > div:first-child { display: grid; gap: 3px; }
+.category-manager-row small { color: var(--admin-muted); font-size: 11px; }
+.category-manager-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .traffic-controls {
   display: flex;
   align-items: center;
@@ -626,7 +648,7 @@ tbody tr:last-child td {
 }
 .product-catalog-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-bottom: 1px solid var(--admin-line);
 }
 .product-catalog-summary > div {
@@ -1301,11 +1323,12 @@ tbody tr:last-child td {
   .product-catalog-summary > div {
     border-bottom: 1px solid var(--admin-line);
   }
-  .product-catalog-summary > div:nth-child(2) {
+  .product-catalog-summary > div:nth-child(2n) {
     border-right: 0;
   }
-  .product-catalog-summary > div:nth-child(n + 3) {
+  .product-catalog-summary > div:nth-child(5) {
     border-bottom: 0;
+    border-right: 0;
   }
   .product-stock-list {
     grid-template-columns: 1fr;
@@ -1360,6 +1383,11 @@ tbody tr:last-child td {
   .admin-nav {
     margin-bottom: 20px;
   }
+  .category-create-form { grid-template-columns: 1fr; padding-inline: 16px; }
+  .category-manager-list { padding-inline: 16px; }
+  .category-manager-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .category-manager-row .status-pill { grid-column: 2; grid-row: 1; }
+  .category-manager-actions { grid-column: 1 / -1; }
   .product-panel-heading {
     align-items: stretch;
     flex-direction: column;
@@ -1386,8 +1414,9 @@ tbody tr:last-child td {
     padding: 13px 15px;
     border-bottom: 1px solid var(--admin-line);
   }
-  .product-catalog-summary > div:nth-child(n + 3) {
+  .product-catalog-summary > div:nth-child(5) {
     border-bottom: 0;
+    border-right: 0;
   }
   .product-catalog-inventory {
     padding: 15px;

@@ -323,6 +323,96 @@ button:focus-visible {
     transform 0.2s ease;
 }
 
+.nav-links > li { position: relative; }
+.nav-links > li > .nav-category-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 0;
+  border: 0;
+  color: #f4eee3;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+.nav-category-toggle::after {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--gold-light);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.nav-category-item:hover > .nav-category-toggle::after,
+.nav-category-item:focus-within > .nav-category-toggle::after,
+.nav-category-item.is-open > .nav-category-toggle::after { transform: scaleX(1); }
+.nav-category-item:hover > .nav-category-toggle,
+.nav-category-item:focus-within > .nav-category-toggle,
+.nav-category-item.is-open > .nav-category-toggle { color: var(--gold-light); }
+.nav-category-chevron { transition: transform .18s ease; }
+.nav-category-item.is-open .nav-category-chevron { transform: rotate(180deg); }
+.nav-category-dropdown {
+  position: absolute;
+  z-index: 1010;
+  top: calc(100% + 8px);
+  left: -16px;
+  display: grid;
+  min-width: 210px;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid rgb(227 195 133 / 26%);
+  border-radius: 14px;
+  background: rgb(17 17 17 / 98%);
+  box-shadow: 0 16px 34px rgb(0 0 0 / 30%);
+  list-style: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-5px);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+}
+.nav-category-item.is-open > .nav-category-dropdown,
+.nav-category-item:hover > .nav-category-dropdown,
+.nav-category-item:focus-within > .nav-category-dropdown {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.nav-category-dropdown button {
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  color: #f4eee3;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+.nav-category-dropdown button:hover,
+.nav-category-dropdown button:focus-visible { color: var(--gold-light); background: rgb(255 255 255 / 7%); }
+.nav-category-dropdown .nav-category-family > button { font-weight: 700; }
+.nav-category-dropdown .nav-category-family > ul {
+  display: grid;
+  gap: 2px;
+  padding: 0 0 5px 10px;
+  list-style: none;
+}
+.nav-category-dropdown .nav-category-family > ul button::before { content: "– "; color: var(--gold-light); }
+.nav-category-loading { padding: 9px 10px; color: #b6aa98; font-size: 11px; }
+
 .nav-links a::after {
   position: absolute;
   right: 0;
@@ -648,6 +738,52 @@ button:focus-visible {
 
 .section-alt {
   background: var(--cream);
+}
+
+.product-category-browser {
+  display: grid;
+  gap: 18px;
+  margin: -18px auto 30px;
+}
+.product-category-group h3 {
+  margin: 0 0 9px;
+  color: var(--charcoal);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.product-category-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.category-filter-button {
+  min-height: 40px;
+  padding: 8px 15px;
+  border: 1px solid var(--cream-dark);
+  border-radius: 999px;
+  color: var(--charcoal);
+  background: #fffdfa;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+}
+.category-filter-button:hover,
+.category-filter-button.is-active {
+  border-color: var(--burgundy);
+  color: var(--white);
+  background: var(--burgundy);
+}
+.category-browser-loading {
+  margin: 0;
+  color: var(--gray);
+  font-size: 13px;
+  text-align: center;
 }
 
 .section-header {
@@ -2158,6 +2294,35 @@ button:focus-visible {
       visibility 0.2s ease;
   }
 
+  .nav-category-item { grid-column: 1 / -1; }
+  .nav-links > li > .nav-category-toggle {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 11px 3px;
+    font-size: 13px;
+  }
+  .nav-category-dropdown,
+  .nav-category-item:hover > .nav-category-dropdown,
+  .nav-category-item:focus-within > .nav-category-dropdown,
+  .nav-category-item.is-open > .nav-category-dropdown {
+    position: static;
+    display: none;
+    min-width: 0;
+    margin: 0 0 8px;
+    padding: 5px 8px;
+    border: 0;
+    border-left: 1px solid rgb(227 195 133 / 36%);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .nav-category-item.is-open > .nav-category-dropdown { display: grid; }
+  .nav-category-dropdown button { padding: 8px 10px; font-size: 12px; }
+
   .nav-links.active {
     visibility: visible;
     opacity: 1;
@@ -2558,6 +2723,34 @@ button:focus-visible {
   .nav-links {
     align-items: stretch;
   }
+  .nav-category-item { grid-column: 1 / -1; }
+  .nav-links > li > .nav-category-toggle {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 11px 3px;
+    font-size: 13px;
+  }
+  .nav-category-dropdown,
+  .nav-category-item:hover > .nav-category-dropdown,
+  .nav-category-item:focus-within > .nav-category-dropdown,
+  .nav-category-item.is-open > .nav-category-dropdown {
+    position: static;
+    display: none;
+    min-width: 0;
+    margin: 0 0 8px;
+    padding: 5px 8px;
+    border: 0;
+    border-left: 1px solid rgb(227 195 133 / 36%);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .nav-category-item.is-open > .nav-category-dropdown { display: grid; }
+  .nav-category-dropdown button { padding: 8px 10px; font-size: 12px; }
   .nav-links a {
     width: 100%;
     padding: 11px 3px;
