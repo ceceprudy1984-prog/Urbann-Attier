@@ -3242,7 +3242,7 @@ button:focus-visible {
   }
 }
 
-media (max-width: 768px) {
+@media (max-width: 768px) {
   /* Mematikan denyut tombol koleksi (tersangka 1) */
   .opening-finished.motion-enabled .motion-hero .hero-actions .hero-collection-cta,
   .opening-finished.motion-enabled .motion-hero .hero-actions .hero-collection-cta::before {
