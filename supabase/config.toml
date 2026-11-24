@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.promo-email]
 verify_jwt = false
+
+[functions.analytics-traffic]
+verify_jwt = false

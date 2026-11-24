@@ -181,18 +181,41 @@ button:focus-visible {
 
 .floating-chat-link:hover { background: #117744; }
 .floating-chat-icon { display: grid; width: 25px; height: 25px; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-size: 14px; line-height: 1; }
+.floating-chat-logo { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .floating-chat-link { animation: none; }
 }
 
 @media (max-width: 768px) {
-  .floating-chat-link { animation: floating-chat-mobile-pulse 2.4s ease-in-out infinite !important; }
-}
-
-@keyframes floating-chat-mobile-pulse {
-  0%, 100% { box-shadow: 0 8px 24px rgb(0 0 0 / 22%), 0 0 0 0 rgb(22 139 80 / 0%); }
-  50% { box-shadow: 0 8px 24px rgb(0 0 0 / 22%), 0 0 0 8px rgb(22 139 80 / 22%); }
+  .floating-chat-link {
+    width: 52px;
+    height: 52px;
+    min-height: 52px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    animation: none !important;
+  }
+  .floating-chat-link::before {
+    content: "Live Chat";
+    position: absolute;
+    right: 50%;
+    bottom: calc(100% + 7px);
+    transform: translateX(50%);
+    padding: 4px 9px;
+    border-radius: 999px;
+    color: #342c26;
+    background: #fff;
+    box-shadow: 0 3px 12px rgb(0 0 0 / 16%);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .floating-chat-icon,
+  .floating-chat-link > span:last-child { display: none; }
+  .floating-chat-logo { display: block; width: 27px; height: 27px; }
 }
 
 @media (max-width: 480px) {
@@ -3216,5 +3239,13 @@ button:focus-visible {
   }
   .custom-order-cta {
     width: 100%;
+  }
+}
+
+media (max-width: 768px) {
+  /* Mematikan denyut tombol koleksi (tersangka 1) */
+  .opening-finished.motion-enabled .motion-hero .hero-actions .hero-collection-cta,
+  .opening-finished.motion-enabled .motion-hero .hero-actions .hero-collection-cta::before {
+    animation: none !important;
   }
 }

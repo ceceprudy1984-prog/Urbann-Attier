@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="admin.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="admin.js?v=20261118-email-image-upload" defer></script>
+    <script src="admin.js?v=20261124-traffic-analytics" defer></script>
   </head>
   <body class="admin-body">
     <main class="admin-shell">
@@ -50,6 +50,7 @@
         <div class="dashboard-content">
           <nav class="admin-nav" aria-label="Menu dashboard">
             <button class="admin-nav-button is-active" type="button" data-admin-view="overview">Ringkasan</button>
+            <button class="admin-nav-button" type="button" data-admin-view="traffic">Sumber trafik</button>
             <button class="admin-nav-button" type="button" data-admin-view="orders">Pesanan</button>
             <button class="admin-nav-button" type="button" data-admin-view="members">Data member</button>
             <button class="admin-nav-button" type="button" data-admin-view="spotlight">Sorotan &amp; promo</button>
@@ -86,6 +87,41 @@
                 </table>
               </div>
               <p class="empty-state" id="ordersEmpty" hidden>Belum ada pesanan yang tersimpan di database.</p>
+            </section>
+          </section>
+
+          <section class="admin-page" id="trafficPage" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">PEMASARAN TOKO</p>
+                <h1>Sumber trafik</h1>
+                <p class="dashboard-welcome">Lihat kanal yang membawa pengunjung dan pesanan ke website.</p>
+              </div>
+              <div class="traffic-controls">
+                <label for="trafficDateRange">Periode</label>
+                <select id="trafficDateRange"><option value="7">7 hari</option><option value="30" selected>30 hari</option><option value="90">90 hari</option></select>
+                <button class="button button-quiet" id="refreshTrafficButton" type="button">Muat ulang</button>
+              </div>
+            </div>
+            <p class="products-status" id="trafficStatus" role="status" aria-live="polite"></p>
+            <section class="stat-grid traffic-stat-grid" aria-label="Ringkasan sumber trafik">
+              <article class="stat-card"><span>Sesi</span><strong id="trafficSessions">—</strong><small>Kunjungan pada periode terpilih</small></article>
+              <article class="stat-card"><span>Pengunjung</span><strong id="trafficUsers">—</strong><small>Pengguna yang tercatat Analytics</small></article>
+              <article class="stat-card"><span>Transaksi</span><strong id="trafficPurchases">—</strong><small>Pesanan dengan event purchase</small></article>
+              <article class="stat-card"><span>Omzet tercatat</span><strong id="trafficRevenue">—</strong><small>Nilai purchase yang diterima Analytics</small></article>
+            </section>
+            <section class="panel product-panel" aria-labelledby="trafficTableTitle">
+              <div class="panel-heading product-panel-heading">
+                <div><p class="eyebrow">ASAL KUNJUNGAN</p><h2 id="trafficTableTitle">Trafik berdasarkan kanal</h2></div>
+              </div>
+              <div class="table-scroll">
+                <table class="orders-table traffic-table">
+                  <thead><tr><th>Sumber</th><th>Media</th><th>Kampanye</th><th>Sesi</th><th>Pengunjung</th><th>Transaksi</th><th>Omzet</th></tr></thead>
+                  <tbody id="trafficSourcesBody"></tbody>
+                </table>
+              </div>
+              <p class="empty-state" id="trafficEmpty" hidden>Belum ada data sumber trafik untuk periode ini.</p>
+              <p class="dashboard-note">Gunakan tautan dengan UTM yang konsisten di setiap promosi. Contoh: <code>?utm_source=tiktok&amp;utm_medium=paid_social&amp;utm_campaign=nama_kampanye</code>. Data pembelian dan omzet baru muncul setelah event purchase aktif di GA4.</p>
             </section>
           </section>
 

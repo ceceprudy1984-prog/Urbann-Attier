@@ -187,6 +187,7 @@ function renderSelectedImageFiles() {
 
 function setActiveView(viewName) {
   $("#overviewPage").hidden = viewName !== "overview";
+  $("#trafficPage").hidden = viewName !== "traffic";
   $("#ordersPage").hidden = viewName !== "orders";
   $("#membersPage").hidden = viewName !== "members";
   $("#spotlightAdminPage").hidden = viewName !== "spotlight";
@@ -198,6 +199,7 @@ function setActiveView(viewName) {
     button.setAttribute("aria-current", active ? "page" : "false");
   });
   if (viewName === "products") loadProducts();
+  if (viewName === "traffic") loadTrafficReport();
   if (viewName === "orders") loadOrders();
   if (viewName === "members") loadMembers();
   if (viewName === "spotlight") loadHomepageContent();
@@ -746,6 +748,51 @@ async function loadOverview() {
   </tr>`).join("");
   $("#ordersEmpty").hidden = recent.data.length > 0;
   document.querySelectorAll("[data-open-order]").forEach((button) => button.addEventListener("click", () => openOrderEditor(button.dataset.openOrder)));
+}
+
+function formatTrafficCount(value) {
+  return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Number(value) || 0);
+}
+
+async function loadTrafficReport() {
+  const button = $("#refreshTrafficButton");
+  button.disabled = true;
+  $("#trafficEmpty").hidden = true;
+  setStatus("#trafficStatus", "Mengambil laporan Analytics…");
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("analytics-traffic", {
+      body: { days: Number($("#trafficDateRange").value) || 30 },
+    });
+    if (error) throw new Error(error.message || "Laporan Analytics belum dapat diambil.");
+    if (data?.error) throw new Error(data.error);
+
+    const totals = data?.totals || {};
+    const rows = Array.isArray(data?.sources) ? data.sources : [];
+    $("#trafficSessions").textContent = formatTrafficCount(totals.sessions);
+    $("#trafficUsers").textContent = formatTrafficCount(totals.users);
+    $("#trafficPurchases").textContent = formatTrafficCount(totals.transactions);
+    $("#trafficRevenue").textContent = formatRupiah(totals.revenue || 0);
+    $("#trafficSourcesBody").innerHTML = rows.map((row) => `<tr>
+      <td>${escapeHtml(row.source || "(direct / none)")}</td>
+      <td>${escapeHtml(row.medium || "(none)")}</td>
+      <td>${escapeHtml(row.campaign || "(not set)")}</td>
+      <td>${formatTrafficCount(row.sessions)}</td>
+      <td>${formatTrafficCount(row.users)}</td>
+      <td>${formatTrafficCount(row.transactions)}</td>
+      <td>${formatRupiah(row.revenue || 0)}</td>
+    </tr>`).join("");
+    $("#trafficEmpty").hidden = rows.length > 0;
+    setStatus("#trafficStatus", `Laporan ${$("#trafficDateRange").selectedOptions[0].text.toLowerCase()} berhasil dimuat.`);
+  } catch (error) {
+    $("#trafficSourcesBody").innerHTML = "";
+    $("#trafficSessions").textContent = "—";
+    $("#trafficUsers").textContent = "—";
+    $("#trafficPurchases").textContent = "—";
+    $("#trafficRevenue").textContent = "—";
+    setStatus("#trafficStatus", error.message || "Laporan Analytics belum dapat dimuat.", true);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 const ORDER_STATUS_LABELS = {
@@ -1665,6 +1712,8 @@ $("#refreshButton").addEventListener("click", async () => {
     setStatus("#dashboardStatus", `Data gagal dimuat: ${error.message}`, true);
   }
 });
+$("#refreshTrafficButton").addEventListener("click", loadTrafficReport);
+$("#trafficDateRange").addEventListener("change", loadTrafficReport);
 $("#refreshOrdersButton").addEventListener("click", async () => {
   try {
     await Promise.all([loadOrders(), loadOverview()]);

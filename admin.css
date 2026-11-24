@@ -339,6 +339,37 @@ tbody tr:last-child td {
 .admin-page > .page-heading {
   margin-bottom: 22px;
 }
+.traffic-controls {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+.traffic-controls select {
+  min-height: 42px;
+  padding: 8px 30px 8px 11px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  color: var(--admin-ink);
+  background: var(--admin-paper);
+}
+.traffic-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 22px;
+}
+.traffic-table {
+  min-width: 780px;
+}
+.traffic-table td {
+  overflow-wrap: anywhere;
+}
+.dashboard-note code {
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #f2eee7;
+  overflow-wrap: anywhere;
+}
 .heading-action {
   margin-top: 4px;
 }
