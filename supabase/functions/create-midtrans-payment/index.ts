@@ -221,11 +221,15 @@ Deno.serve(async (request) => {
     const items = body?.items;
     const shipping = body?.shipping;
     const memberAccessToken = String(body?.memberAccessToken ?? "").trim();
+    const affiliateAttributionToken = String(body?.affiliateAttributionToken ?? "").trim();
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutToken)) {
       return jsonResponse({ error: "Sesi checkout tidak valid. Muat ulang halaman." }, 400);
     }
     if (!customer || typeof customer !== "object" || !Array.isArray(items) || !items.length || items.length > 30) {
       return jsonResponse({ error: "Data pesanan belum lengkap." }, 400);
+    }
+    if (affiliateAttributionToken && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(affiliateAttributionToken)) {
+      return jsonResponse({ error: "Data referral tidak valid. Muat ulang halaman lalu coba lagi." }, 400);
     }
     const destinationId = Number(shipping?.destinationId);
     const weightGrams = Number(shipping?.weightGrams);
@@ -254,7 +258,9 @@ Deno.serve(async (request) => {
     }
     const { data: result, error } = await client.rpc("prepare_midtrans_order", {
       p_checkout_token: checkoutToken,
-      p_customer: customer,
+      p_customer: affiliateAttributionToken
+        ? { ...customer, affiliate_attribution_token: affiliateAttributionToken }
+        : customer,
       p_items: items,
       p_shipping: {
         destination_id: destinationId,

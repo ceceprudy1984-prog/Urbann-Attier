@@ -550,7 +550,8 @@ recipientForm?.addEventListener("submit", async (event) => {
     checkoutActionStatus.textContent = error.message;
     return;
   }
-  const fingerprint = JSON.stringify({ customer, items: cartSnapshot, memberId: checkoutMemberSession?.user?.id || null });
+  const affiliateAttributionToken = await window.urbannGetAffiliateAttributionToken?.() || null;
+  const fingerprint = JSON.stringify({ customer, items: cartSnapshot, memberId: checkoutMemberSession?.user?.id || null, affiliateAttributionToken });
   const hasPendingCheckout = sessionStorage.getItem(checkoutTokenStorageKey)
     && sessionStorage.getItem(checkoutFingerprintStorageKey) === fingerprint;
   if (!stockCheck.ok && !hasPendingCheckout) {
@@ -569,6 +570,7 @@ recipientForm?.addEventListener("submit", async (event) => {
       body: {
         checkoutToken: token,
         memberAccessToken: checkoutMemberSession?.access_token || null,
+        affiliateAttributionToken,
         customer,
         items: cartSnapshot,
         shipping: {

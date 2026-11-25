@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="admin.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="admin.js?v=20261124-traffic-analytics" defer></script>
+    <script src="admin.js?v=20261125-affiliate" defer></script>
   </head>
   <body class="admin-body">
     <main class="admin-shell">
@@ -56,6 +56,7 @@
             <button class="admin-nav-button" type="button" data-admin-view="spotlight">Sorotan &amp; promo</button>
             <button class="admin-nav-button" type="button" data-admin-view="email-campaigns">Email promo</button>
             <button class="admin-nav-button" type="button" data-admin-view="products">Produk &amp; stok</button>
+            <button class="admin-nav-button" type="button" data-admin-view="affiliates">Affiliate</button>
           </nav>
           <p class="dashboard-status" id="dashboardStatus" role="status" aria-live="polite"></p>
           <a class="order-notification-link" id="orderNotificationLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Kirim pemberitahuan WhatsApp pelanggan</a>
@@ -294,6 +295,19 @@
               <p class="empty-state" id="productsEmpty" hidden>Belum ada produk. Klik “Tambah produk” untuk mulai mengisi katalog.</p>
             </section>
           </section>
+
+          <section class="admin-page" id="affiliatesPage" hidden>
+            <div class="page-heading"><div><p class="eyebrow">PROGRAM KEMITRAAN</p><h1>Affiliate</h1><p class="dashboard-welcome">Tinjau pendaftar, atur komisi, dan catat pencairan manual.</p></div><button class="button button-quiet" id="refreshAffiliatesButton" type="button">Muat ulang</button></div>
+            <p class="products-status" id="affiliateAdminStatus" role="status" aria-live="polite"></p>
+            <section class="panel product-panel"><div class="panel-heading"><div><p class="eyebrow">PENGATURAN PROGRAM</p><h2>Komisi dan pencairan</h2></div></div>
+              <form class="affiliate-admin-settings" id="affiliateSettingsForm"><label class="form-field" for="affiliateCommissionRate"><span>Komisi (%)</span><input id="affiliateCommissionRate" type="number" min="0" max="100" step="0.01" required /></label><p>Awal 8%. Pencairan BCA setiap Jumat 15.00 WIB; minimum Rp100.000.</p><button class="button button-primary" type="submit">Simpan persentase</button></form>
+              <button class="button button-quiet" id="prepareAffiliatePayoutsButton" type="button">Siapkan pencairan Jumat</button>
+            </section>
+            <section class="panel product-panel"><div class="panel-heading"><div><p class="eyebrow">PENDAFTARAN</p><h2>Daftar affiliate</h2></div></div><div class="table-scroll"><table class="orders-table"><thead><tr><th>Nama / email</th><th>Kontak</th><th>Referral</th><th>Status</th><th>Saldo</th><th>Tindakan</th></tr></thead><tbody id="affiliateApplicationsBody"></tbody></table></div><p class="empty-state" id="affiliateApplicationsEmpty" hidden>Belum ada pendaftar.</p></section>
+            <section class="panel product-panel"><div class="panel-heading"><div><p class="eyebrow">PENCAIRAN MANUAL</p><h2>Antrean transfer</h2></div></div><div class="table-scroll"><table class="orders-table"><thead><tr><th>Affiliate</th><th>Rekening BCA</th><th>Jumlah</th><th>Status</th><th>Referensi transfer</th><th>Simpan</th></tr></thead><tbody id="affiliatePayoutsBody"></tbody></table></div><p class="empty-state" id="affiliatePayoutsEmpty" hidden>Belum ada pencairan.</p></section>
+            <section class="panel product-panel"><div class="panel-heading"><div><p class="eyebrow">PESANAN TERATRIBUSI</p><h2>Komisi terbaru</h2></div></div><div class="table-scroll"><table class="orders-table"><thead><tr><th>Waktu</th><th>Affiliate</th><th>Pesanan</th><th>Nilai produk</th><th>Komisi</th><th>Status</th></tr></thead><tbody id="affiliateCommissionsBody"></tbody></table></div></section>
+            <section class="panel product-panel"><div class="panel-heading"><div><p class="eyebrow">INSENTIF BULANAN</p><h2>Bonus target 500 pcs</h2></div></div><div class="table-scroll"><table class="orders-table"><thead><tr><th>Bulan</th><th>Affiliate</th><th>Unit valid</th><th>Bonus</th><th>Status</th></tr></thead><tbody id="affiliateBonusesBody"></tbody></table></div><p class="empty-state" id="affiliateBonusesEmpty" hidden>Belum ada bonus bulanan.</p></section>
+          </section>
         </div>
       </section>
 
@@ -370,9 +384,10 @@
               <div class="form-field"><label for="orderShippingService">Layanan</label><input id="orderShippingService" maxlength="100" placeholder="Contoh: REG" /></div>
               <div class="form-field"><label for="orderTrackingNumber">Nomor resi</label><input id="orderTrackingNumber" maxlength="120" /></div>
             </div>
-            <p class="order-workflow-note" id="orderWorkflowNote">Saat transfer sudah dicek sukses, pilih Lunas. Pesanan otomatis berpindah ke Diproses. Setelah status berubah dan tersimpan, WhatsApp akan disiapkan dengan pesan untuk pelanggan; admin tetap menekan Kirim. Membatalkan pesanan akan mengembalikan stok secara otomatis. Invoice A6 mencetak data pesanan yang sudah tersimpan; simpan perubahan terlebih dahulu.</p>
+            <p class="order-workflow-note" id="orderWorkflowNote">Saat transfer sudah dicek sukses, pilih Lunas. Pesanan otomatis berpindah ke Diproses. Setelah status berubah dan tersimpan, WhatsApp akan disiapkan dengan pesan untuk pelanggan; admin tetap menekan Kirim. Untuk retur, minta pelanggan mengirim nomor pesanan dan video unboxing melalui WhatsApp, lalu gunakan tombol retur setelah bukti diperiksa. Batas retur 3 hari setelah diterima.</p>
+            <div class="form-field" id="returnRequestField" hidden><label for="returnRequestReceivedAt">Waktu pelanggan mengajukan retur</label><input id="returnRequestReceivedAt" type="datetime-local" /><small>Gunakan waktu pesan WhatsApp diterima; pengajuan harus masuk dalam 3 hari setelah barang diterima.</small></div>
             <p class="form-status product-form-status" id="orderFormStatus" role="status" aria-live="polite"></p>
-            <div class="modal-actions order-modal-actions"><button class="button button-quiet" id="cancelOrderEdit" type="button">Tutup</button><button class="button button-quiet" id="printOrderInvoice" type="button">Cetak invoice A6</button><button class="button button-primary" id="saveOrderButton" type="submit">Simpan perubahan</button></div>
+            <div class="modal-actions order-modal-actions"><button class="button button-small" id="markOrderReturnedButton" type="button" hidden>Tandai retur diterima</button><button class="button button-quiet" id="cancelOrderEdit" type="button">Tutup</button><button class="button button-quiet" id="printOrderInvoice" type="button">Cetak invoice A6</button><button class="button button-primary" id="saveOrderButton" type="submit">Simpan perubahan</button></div>
           </form>
         </section>
       </div>

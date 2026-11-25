@@ -32,6 +32,7 @@ const state = {
   promoAudienceCount: null,
   promoEmailBusy: false,
   promoEmailImageFile: null,
+  affiliateAdminData: null,
   busy: false,
 };
 
@@ -194,12 +195,14 @@ function setActiveView(viewName) {
   $("#spotlightAdminPage").hidden = viewName !== "spotlight";
   $("#emailCampaignsPage").hidden = viewName !== "email-campaigns";
   $("#productsPage").hidden = viewName !== "products";
+  $("#affiliatesPage").hidden = viewName !== "affiliates";
   document.querySelectorAll("[data-admin-view]").forEach((button) => {
     const active = button.dataset.adminView === viewName;
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-current", active ? "page" : "false");
   });
   if (viewName === "products") loadProducts();
+  if (viewName === "affiliates") loadAffiliateAdmin();
   if (viewName === "traffic") loadTrafficReport();
   if (viewName === "orders") loadOrders();
   if (viewName === "members") loadMembers();
@@ -208,6 +211,72 @@ function setActiveView(viewName) {
     loadPromoEmailAudience();
     loadPromoEmailHistory();
   }
+}
+
+function affiliateStatusText(value) {
+  return ({ pending: "Menunggu", approved: "Aktif", rejected: "Ditolak", suspended: "Ditangguhkan", closure_requested: "Minta tutup", closed: "Ditutup", held: "Ditahan 3 hari kerja", available: "Siap dicairkan", reversed: "Dibatalkan", paid: "Dibayar", processing: "Diproses", failed: "Gagal" })[value] || value || "—";
+}
+
+async function loadAffiliateAdmin() {
+  if (!supabaseClient) return;
+  setStatus("#affiliateAdminStatus", "Memuat data affiliate…");
+  try {
+    const { data, error } = await supabaseClient.rpc("get_admin_affiliate_dashboard");
+    if (error) throw error;
+    state.affiliateAdminData = data || {};
+    const settings = data?.settings || {};
+    $("#affiliateCommissionRate").value = settings.commission_rate ?? 8;
+    const affiliates = data?.affiliates || [];
+    $("#affiliateApplicationsBody").innerHTML = affiliates.map((row) => {
+      let actions = "—";
+      if (row.status === "pending") actions = `<button class="button button-small" data-affiliate-review="${escapeHtml(row.user_id)}" data-decision="approve">Setujui</button> <button class="button button-small" data-affiliate-review="${escapeHtml(row.user_id)}" data-decision="reject">Tolak</button>`;
+      else if (row.status === "approved") actions = `<button class="button button-small" data-affiliate-review="${escapeHtml(row.user_id)}" data-decision="suspend">Tangguhkan</button>`;
+      else if (row.status === "suspended") actions = `<button class="button button-small" data-affiliate-review="${escapeHtml(row.user_id)}" data-decision="restore">Aktifkan</button>`;
+      else if (row.status === "closure_requested") actions = `<button class="button button-small" data-affiliate-closure="${escapeHtml(row.user_id)}" data-approve="true">Setujui tutup</button> <button class="button button-small" data-affiliate-closure="${escapeHtml(row.user_id)}" data-approve="false">Tolak</button><small>${escapeHtml(row.closure_reason || "")}</small>`;
+      return `<tr><td><strong>${escapeHtml(row.full_name)}</strong><small>${escapeHtml(row.email || "")}</small></td><td>${escapeHtml(row.phone || "")}</td><td>${escapeHtml(row.referral_code || "")}</td><td>${escapeHtml(affiliateStatusText(row.status))}</td><td>Menunggu ${formatRupiah(row.pending_commission)}<small>Tersedia ${formatRupiah(row.available_balance)}</small></td><td class="affiliate-admin-actions">${actions}</td></tr>`;
+    }).join("");
+    $("#affiliateApplicationsEmpty").hidden = affiliates.length > 0;
+    const payouts = data?.payouts || [];
+    $("#affiliatePayoutsBody").innerHTML = payouts.map((row) => `<tr><td><strong>${escapeHtml(row.affiliate_name)}</strong><small>${escapeHtml(row.is_final ? "Pencairan akhir" : formatDate(row.payout_week))}</small></td><td>${escapeHtml(row.bank_name)} · ${escapeHtml(row.bank_account_name)}<small>${escapeHtml(row.bank_account_number)}</small></td><td><strong>${formatRupiah(row.amount)}</strong></td><td><select data-payout-status="${escapeHtml(row.id)}"><option value="${escapeHtml(row.status)}">${escapeHtml(affiliateStatusText(row.status))}</option><option value="processing">Diproses</option><option value="paid">Dibayar</option><option value="failed">Gagal</option></select></td><td><input data-payout-reference="${escapeHtml(row.id)}" value="${escapeHtml(row.transfer_reference || "")}" placeholder="No. referensi" maxlength="160" /></td><td><button class="button button-small" data-save-affiliate-payout="${escapeHtml(row.id)}">Simpan</button></td></tr>`).join("");
+    $("#affiliatePayoutsEmpty").hidden = payouts.length > 0;
+    const commissions = data?.recent_commissions || [];
+    $("#affiliateCommissionsBody").innerHTML = commissions.map((row) => `<tr><td>${formatDate(row.created_at)}</td><td>${escapeHtml(row.affiliate_name)}<small>${escapeHtml(row.referral_code)}</small></td><td>${escapeHtml(row.order_number || "—")}</td><td>${formatRupiah(row.product_amount)}</td><td>${formatRupiah(row.amount)} <small>${escapeHtml(row.rate)}%</small></td><td>${escapeHtml(affiliateStatusText(row.status))}</td></tr>`).join("");
+    const bonuses = data?.bonus_awards || [];
+    $("#affiliateBonusesBody").innerHTML = bonuses.map((row) => `<tr><td>${formatDate(row.period_month)}</td><td>${escapeHtml(row.affiliate_name)}</td><td>${Number(row.qualified_units).toLocaleString("id-ID")} pcs</td><td>${formatRupiah(row.amount)}</td><td>${escapeHtml(affiliateStatusText(row.status))}</td></tr>`).join("");
+    $("#affiliateBonusesEmpty").hidden = bonuses.length > 0;
+    setStatus("#affiliateAdminStatus", "Data affiliate diperbarui.");
+  } catch (error) {
+    setStatus("#affiliateAdminStatus", `Data affiliate gagal dimuat: ${error.message || "Pastikan migrasi affiliate telah diterapkan."}`, true);
+  }
+}
+
+async function handleAffiliateAdminAction(event) {
+  const review = event.target.closest("[data-affiliate-review]");
+  const closure = event.target.closest("[data-affiliate-closure]");
+  const payout = event.target.closest("[data-save-affiliate-payout]");
+  try {
+    if (review) {
+      const note = review.dataset.decision === "reject" || review.dataset.decision === "suspend"
+        ? prompt("Tuliskan alasan atau catatan admin:") : "";
+      if ((review.dataset.decision === "reject" || review.dataset.decision === "suspend") && note === null) return;
+      const { error } = await supabaseClient.rpc("admin_review_affiliate", { p_user_id: review.dataset.affiliateReview, p_decision: review.dataset.decision, p_note: note });
+      if (error) throw error;
+    } else if (closure) {
+      const approved = closure.dataset.approve === "true";
+      const note = prompt(approved ? "Catatan pencairan akhir (opsional):" : "Alasan penutupan ditolak:", "");
+      if (note === null) return;
+      const { error } = await supabaseClient.rpc("admin_review_affiliate_closure", { p_user_id: closure.dataset.affiliateClosure, p_approve: approved, p_note: note });
+      if (error) throw error;
+    } else if (payout) {
+      const id = payout.dataset.saveAffiliatePayout;
+      const status = document.querySelector(`[data-payout-status="${CSS.escape(id)}"]`).value;
+      const reference = document.querySelector(`[data-payout-reference="${CSS.escape(id)}"]`).value.trim();
+      if (status === "paid" && !reference) throw new Error("Isi referensi transfer sebelum menandai pencairan sebagai dibayar.");
+      const { error } = await supabaseClient.rpc("admin_update_affiliate_payout", { p_payout_id: id, p_status: status, p_reference: reference, p_note: null });
+      if (error) throw error;
+    } else return;
+    await loadAffiliateAdmin();
+  } catch (error) { setStatus("#affiliateAdminStatus", error.message || "Perubahan affiliate belum berhasil.", true); }
 }
 
 async function invokePromoEmailFunction(body) {
@@ -828,7 +897,7 @@ function orderStatusClass(status) {
 async function loadOrders() {
   setStatus("#ordersStatus", "Memuat pesanan…");
   const { data, error } = await supabaseClient.from("orders")
-    .select("id, order_number, customer_id, customer_name, customer_phone, customer_email, address_line, province, city, district, postal_code, customer_note, status, payment_status, payment_method, shipping_status, shipping_provider, shipping_service, tracking_number, subtotal_amount, discount_base_amount, discount_amount, discount_percent, discount_order_number, discount_tokens_remaining, packaging_fee, shipping_fee, total_amount, confirmed_at, confirmed_by_email, paid_at, paid_confirmed_by_email, created_at, updated_at, confirmed_by, paid_confirmed_by")
+    .select("id, order_number, customer_id, customer_name, customer_phone, customer_email, address_line, province, city, district, postal_code, customer_note, status, payment_status, payment_method, shipping_status, delivered_at, return_requested_at, shipping_provider, shipping_service, tracking_number, subtotal_amount, discount_base_amount, discount_amount, discount_percent, discount_order_number, discount_tokens_remaining, packaging_fee, shipping_fee, total_amount, confirmed_at, confirmed_by_email, paid_at, paid_confirmed_by_email, created_at, updated_at, confirmed_by, paid_confirmed_by")
     .order("created_at", { ascending: false }).limit(100);
   if (error) {
     setStatus("#ordersStatus", `Pesanan gagal dimuat: ${error.message}`, true);
@@ -889,7 +958,7 @@ async function openOrderEditor(orderId) {
   $("#orderModalTitle").textContent = `Pesanan ${order.order_number}`;
   $("#orderCustomerSummary").innerHTML = `<div><strong>${escapeHtml(order.customer_name)}</strong><span>${escapeHtml(order.customer_phone)}${order.customer_email ? ` · ${escapeHtml(order.customer_email)}` : ""}</span></div>
     <p>${escapeHtml(order.address_line)}, ${escapeHtml(order.district)}, ${escapeHtml(order.city)}, ${escapeHtml(order.province)} ${escapeHtml(order.postal_code)}</p>
-    ${order.customer_note ? `<p>Catatan: ${escapeHtml(order.customer_note)}</p>` : ""}<small>Dibuat ${formatDate(order.created_at)} · Konfirmasi admin: ${order.confirmed_at ? `${formatDate(order.confirmed_at)} oleh ${escapeHtml(order.confirmed_by_email || "admin")}` : "Belum"} · Pembayaran: ${order.paid_at ? `${formatDate(order.paid_at)} diverifikasi oleh ${escapeHtml(order.paid_confirmed_by_email || "admin")}` : "Belum lunas"}</small>`;
+    ${order.customer_note ? `<p>Catatan: ${escapeHtml(order.customer_note)}</p>` : ""}<small>Status pengiriman: ${escapeHtml(order.shipping_status || "—")}${order.delivered_at ? ` · Diterima ${formatDate(order.delivered_at)}` : ""}${order.return_requested_at ? ` · Retur diajukan ${formatDate(order.return_requested_at)}` : ""}</small><small>Dibuat ${formatDate(order.created_at)} · Konfirmasi admin: ${order.confirmed_at ? `${formatDate(order.confirmed_at)} oleh ${escapeHtml(order.confirmed_by_email || "admin")}` : "Belum"} · Pembayaran: ${order.paid_at ? `${formatDate(order.paid_at)} diverifikasi oleh ${escapeHtml(order.paid_confirmed_by_email || "admin")}` : "Belum lunas"}</small>`;
   $("#orderItemsBody").innerHTML = order.items.length ? order.items.map((item) => `<tr>
     <td><strong>${escapeHtml(item.product_name)}</strong><small>${escapeHtml(item.color_name)} · ${escapeHtml(item.size_name)} · ${escapeHtml(item.pricing_tier)}</small></td>
     <td>${Number(item.quantity)} pcs</td><td>${formatRupiah(item.unit_price)}</td><td>${formatRupiah(item.line_total)}</td>
@@ -901,6 +970,10 @@ async function openOrderEditor(orderId) {
   $("#orderShippingProvider").value = order.shipping_provider || "";
   $("#orderShippingService").value = order.shipping_service || "";
   $("#orderTrackingNumber").value = order.tracking_number || "";
+  $("#markOrderReturnedButton").hidden = order.shipping_status !== "delivered";
+  $("#returnRequestField").hidden = order.shipping_status !== "delivered";
+  const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+  $("#returnRequestReceivedAt").value = localNow.toISOString().slice(0, 16);
   $("#orderFormStatus").textContent = "";
   $("#orderModal").hidden = false;
   $("#orderStatusSelect").focus();
@@ -1834,6 +1907,28 @@ $("#refreshButton").addEventListener("click", async () => {
   }
 });
 $("#refreshTrafficButton").addEventListener("click", loadTrafficReport);
+$("#refreshAffiliatesButton").addEventListener("click", loadAffiliateAdmin);
+$("#affiliateApplicationsBody").addEventListener("click", handleAffiliateAdminAction);
+$("#affiliatePayoutsBody").addEventListener("click", handleAffiliateAdminAction);
+$("#affiliateSettingsForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    const rate = Number($("#affiliateCommissionRate").value);
+    const { error } = await supabaseClient.rpc("admin_update_affiliate_settings", { p_commission_rate: rate });
+    if (error) throw error;
+    setStatus("#affiliateAdminStatus", "Persentase komisi diperbarui.");
+    await loadAffiliateAdmin();
+  } catch (error) { setStatus("#affiliateAdminStatus", error.message || "Pengaturan komisi belum tersimpan.", true); }
+});
+$("#prepareAffiliatePayoutsButton").addEventListener("click", async () => {
+  if (!confirm("Siapkan daftar affiliate yang memenuhi syarat pencairan minggu ini? Transfer tetap dilakukan manual oleh admin.")) return;
+  try {
+    const { data, error } = await supabaseClient.rpc("admin_prepare_affiliate_payouts");
+    if (error) throw error;
+    setStatus("#affiliateAdminStatus", `${Number(data || 0)} pencairan disiapkan. Periksa rekening dan lakukan transfer manual.`);
+    await loadAffiliateAdmin();
+  } catch (error) { setStatus("#affiliateAdminStatus", error.message || "Daftar pencairan belum dapat disiapkan.", true); }
+});
 $("#trafficDateRange").addEventListener("change", loadTrafficReport);
 $("#refreshOrdersButton").addEventListener("click", async () => {
   try {
@@ -1882,6 +1977,22 @@ document.querySelectorAll("[data-open-orders]").forEach((button) => {
   });
 });
 $("#orderForm").addEventListener("submit", saveOrder);
+$("#markOrderReturnedButton").addEventListener("click", async () => {
+  if (!state.editingOrderId) return;
+  if (!confirm("Pastikan permintaan retur diajukan dalam 3 hari dan video unboxing sudah diperiksa. Tandai pesanan ini sebagai retur? Komisi affiliate terkait akan dibatalkan.")) return;
+  const button = $("#markOrderReturnedButton");
+  button.disabled = true;
+  try {
+    const requestReceivedAt = $("#returnRequestReceivedAt").value;
+    if (!requestReceivedAt) throw new Error("Isi waktu pengajuan retur dari pesan WhatsApp pelanggan.");
+    const { error } = await supabaseClient.rpc("admin_mark_order_returned", { p_order_id: state.editingOrderId, p_request_received_at: new Date(requestReceivedAt).toISOString() });
+    if (error) throw error;
+    closeOrderModal();
+    await Promise.all([loadOrders(), loadOverview()]);
+    setStatus("#ordersStatus", "Retur dicatat. Komisi affiliate yang belum dibayar dibatalkan.");
+  } catch (error) { setStatus("#orderFormStatus", error.message || "Retur belum dapat dicatat.", true); }
+  finally { button.disabled = false; }
+});
 $("#printOrderInvoice").addEventListener("click", printOrderInvoice);
 $("#closeOrderModal").addEventListener("click", closeOrderModal);
 $("#cancelOrderEdit").addEventListener("click", closeOrderModal);

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#181715" />
+    <title>Affiliate | Urbann Attier</title>
+    <meta name="description" content="Daftar dan kelola akun affiliate Urbann Attier." />
+    <link rel="icon" type="image/x-icon" href="assets/Urban Attier.jpg" />
+    <link rel="stylesheet" href="affiliate.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="affiliate.js" defer></script>
+  </head>
+  <body class="affiliate-body">
+    <main class="affiliate-shell">
+      <a class="affiliate-back" href="index.html">← Kembali ke toko</a>
+      <header class="affiliate-brand"><img src="assets/urban attier tf.png" alt="" /><span>Urbann Attier <small>PROGRAM AFFILIATE</small></span></header>
+      <p class="affiliate-status" id="affiliateStatus" role="status" aria-live="polite"></p>
+
+      <section class="affiliate-card" id="authPanel">
+        <p class="affiliate-eyebrow">BERTUMBUH BERSAMA KAMI</p>
+        <h1 id="authTitle">Masuk ke akun affiliate</h1>
+        <p class="affiliate-lead">Bagikan koleksi Urbann Attier dan pantau hasil referral Anda.</p>
+        <form id="authForm" class="affiliate-form">
+          <label>Email<input id="authEmail" type="email" autocomplete="email" required /></label>
+          <label>Kata sandi<input id="authPassword" type="password" minlength="8" autocomplete="current-password" required /></label>
+          <label id="nameField" hidden>Nama lengkap<input id="authApplicantName" maxlength="160" autocomplete="name" /></label>
+          <label id="phoneField" hidden>Nomor WhatsApp<input id="authApplicantPhone" maxlength="32" type="tel" autocomplete="tel" /></label>
+          <button class="affiliate-button" id="authSubmit" type="submit">Masuk</button>
+        </form>
+        <p class="affiliate-switch" id="authSwitch">Belum punya akun? <button type="button" data-mode="register">Daftar</button></p>
+      </section>
+
+      <section class="affiliate-card" id="applicationPanel" hidden>
+        <p class="affiliate-eyebrow">PENDAFTARAN AFFILIATE</p>
+        <h1>Ketentuan program</h1>
+        <div class="affiliate-terms">
+          <ul>
+            <li>Komisi awal 8% dari nilai produk setelah diskon, di luar ongkir dan biaya pengemasan. Besar persentase dapat berubah dan akan diberitahukan.</li>
+            <li>Referral berlaku 30 hari. Klik referral terbaru menggantikan referral sebelumnya pada perangkat yang sama.</li>
+            <li>Komisi menunggu sampai pembayaran lunas, pesanan diterima, lalu melewati 3 hari tanpa retur atau pembatalan.</li>
+            <li>Pencairan ditangani manual setiap Jumat mulai pukul 15.00 WIB melalui transfer BCA. Saldo minimum Rp100.000; saldo lebih kecil dibawa ke pekan berikutnya.</li>
+            <li>Bonus Rp500.000 diberikan satu kali untuk setiap bulan kalender saat sedikitnya 500 pcs pesanan affiliate yang memenuhi syarat tercatat.</li>
+            <li>Permintaan penutupan akun memerlukan alasan dan persetujuan admin. Saldo sah di bawah minimum tetap dibayarkan pada pencairan akhir.</li>
+            <li>Retur diajukan dalam 3 hari setelah barang diterima. Video unboxing wajib disertakan untuk pengajuan retur; admin meninjau bukti dan kondisi barang.</li>
+          </ul>
+        </div>
+        <div class="affiliate-form">
+          <label>Nama lengkap<input id="applicantName" maxlength="160" autocomplete="name" required /></label>
+          <label>Nomor WhatsApp<input id="applicantPhone" maxlength="32" type="tel" autocomplete="tel" required /></label>
+        </div>
+        <label class="affiliate-check"><input id="acceptTerms" type="checkbox" /> Saya telah membaca dan menyetujui ketentuan affiliate.</label>
+        <button class="affiliate-button" id="applyButton" type="button">Ajukan keanggotaan</button>
+      </section>
+
+      <section id="affiliateDashboard" hidden>
+        <section class="affiliate-card affiliate-heading-row">
+          <div><p class="affiliate-eyebrow">DASHBOARD AFFILIATE</p><h1 id="dashboardGreeting">Halo</h1><p class="affiliate-lead" id="applicationLabel"></p></div>
+          <button class="affiliate-button affiliate-button-light" id="affiliateLogout" type="button">Keluar</button>
+        </section>
+        <section class="affiliate-card" id="approvedContent" hidden>
+          <div class="affiliate-link-box"><div><span class="affiliate-eyebrow">LINK REFERRAL ANDA</span><strong id="referralLink"></strong></div><button class="affiliate-button" id="copyReferral" type="button">Salin link</button></div>
+          <div class="affiliate-stats">
+            <article><span>Klik referral</span><strong id="clickCount">0</strong></article>
+            <article><span>Komisi menunggu</span><strong id="pendingBalance">Rp0</strong></article>
+            <article><span>Saldo tersedia</span><strong id="availableBalance">Rp0</strong></article>
+            <article><span>Total sudah dibayar</span><strong id="paidTotal">Rp0</strong></article>
+          </div>
+          <p class="affiliate-note" id="payoutNote"></p>
+          <div class="affiliate-form-section">
+            <h2>Rekening pencairan</h2><p>Transfer manual hanya ke rekening BCA atas nama Anda.</p>
+            <form class="affiliate-form bank-form" id="bankForm"><label>Nama pemilik rekening<input id="bankAccountName" maxlength="160" required /></label><label>Nomor rekening BCA<input id="bankAccountNumber" inputmode="numeric" pattern="[0-9]{8,24}" maxlength="24" required /></label><button class="affiliate-button" type="submit">Simpan rekening</button></form>
+          </div>
+          <div class="affiliate-form-section"><h2>Aktivitas komisi</h2><div class="affiliate-table-wrap"><table><thead><tr><th>Pesanan</th><th>Nilai produk</th><th>Komisi</th><th>Status</th></tr></thead><tbody id="commissionRows"></tbody></table></div><p class="affiliate-empty" id="commissionEmpty" hidden>Belum ada pesanan referral.</p></div>
+          <div class="affiliate-form-section"><h2>Bonus target bulanan</h2><div class="affiliate-table-wrap"><table><thead><tr><th>Bulan</th><th>Unit valid</th><th>Bonus</th><th>Status</th></tr></thead><tbody id="bonusRows"></tbody></table></div><p class="affiliate-empty" id="bonusEmpty" hidden>Belum ada bonus bulanan.</p></div>
+          <div class="affiliate-form-section"><h2>Riwayat pencairan</h2><div class="affiliate-table-wrap"><table><thead><tr><th>Tanggal</th><th>Jumlah</th><th>Status</th><th>Catatan</th></tr></thead><tbody id="payoutRows"></tbody></table></div><p class="affiliate-empty" id="payoutEmpty" hidden>Belum ada pencairan.</p></div>
+          <div class="affiliate-form-section affiliate-close-section"><h2>Penutupan akun</h2><p>Penutupan memerlukan persetujuan admin. Saldo sah tetap dicairkan meskipun di bawah batas minimum.</p><form class="affiliate-form" id="closureForm"><label>Alasan penutupan<textarea id="closureReason" minlength="10" maxlength="1000" required></textarea></label><button class="affiliate-button affiliate-button-danger" type="submit">Ajukan penutupan</button></form></div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

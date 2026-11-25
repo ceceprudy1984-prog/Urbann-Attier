@@ -404,6 +404,7 @@ async function loadCatalog() {
   }
   publicSupabaseClient ||= window.supabase.createClient(config.url, config.publishableKey);
   window.urbannSupabaseClient = publicSupabaseClient;
+  window.dispatchEvent(new Event("urbann:supabase-ready"));
   const [productsResult, settingsResult, categoriesResult] = await Promise.all([
     publicSupabaseClient.from("products")
       .select("id, sku, name, slug, category, category_id, description, material, model, care_notes, price_retail, price_series, price_wholesale, wholesale_min_qty, sort_order, created_at")
