@@ -96,7 +96,11 @@ function perbaruiJudulProduk() {
     return;
   }
 
-  const productUrl = new URL(`/produk/${encodeURIComponent(produkAktif.slug || produkAktif.id)}/`, "https://urbannattier.com");
+  const productIdentifier = encodeURIComponent(produkAktif.slug || produkAktif.id);
+  const isStaticProductPage = /^\/produk\/[^/]+\/?$/.test(window.location.pathname);
+  const productUrl = isStaticProductPage
+    ? new URL(`/produk/${productIdentifier}/`, "https://urbannattier.com")
+    : new URL(`/detail-produk.html?slug=${productIdentifier}`, "https://urbannattier.com");
   const canonicalUrl = canonical || document.head.appendChild(document.createElement("link"));
   canonicalUrl.rel = "canonical";
   canonicalUrl.href = productUrl.href;

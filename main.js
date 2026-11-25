@@ -191,7 +191,7 @@ function renderProducts(searchTerm = "") {
         <div class="produk-info">
           <h3 class="produk-nama">${escapeHtml(item.nama)}</h3>
           <p class="produk-harga">${formatRupiah(item.harga)}</p>
-          <a href="/produk/${encodeURIComponent(item.slug)}/" class="btn-detail">Lihat Detail</a>
+          <a href="/detail-produk.html?slug=${encodeURIComponent(item.slug)}" class="btn-detail">Lihat Detail</a>
         </div>
       </article>`;
     }).join("")
@@ -232,7 +232,7 @@ function renderSpotlightProductCard(item, badge) {
     <div class="produk-info">
       <h3 class="produk-nama">${escapeHtml(item.nama)}</h3>
       <p class="produk-harga">${formatRupiah(item.harga)}</p>
-      <a href="/produk/${encodeURIComponent(item.slug)}/" class="btn-detail">Lihat Detail</a>
+      <a href="/detail-produk.html?slug=${encodeURIComponent(item.slug)}" class="btn-detail">Lihat Detail</a>
     </div>
   </article>`;
 }
