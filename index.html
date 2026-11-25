@@ -46,7 +46,7 @@
   </script>
 
   <link rel="icon" type="image/x-icon" href="assets/Urban Attier.jpg" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=20261126-affiliate-invite" />
   <script src="analytics.js"></script>
 </head>
 
@@ -82,18 +82,25 @@
     <div class="member-welcome-card">
       <button class="member-welcome-close" type="button" data-welcome-continue aria-label="Tutup pemberitahuan">&times;</button>
       <img class="member-welcome-logo" src="assets/urban attier tf.png" alt="Logo Urbann Attier" />
-      <p class="section-label">MEMBER URBANN ATTIER</p>
-      <h2 id="memberWelcomeTitle">Kenali benefit menjadi member</h2>
-      <p id="memberWelcomeDescription" class="member-welcome-intro">Buat akun untuk bergabung dengan Urbann Attier dan mendapatkan kabar seputar koleksi serta program khusus member.</p>
-      <ul class="member-benefits">
-        <li><span aria-hidden="true">✦</span><span><strong>Diskon 5% untuk lima pesanan pertama</strong><br />Berlaku untuk lima pesanan harga ecer yang berhasil dibayar. Setelah itu, harga normal berlaku.</span></li>
-        <li><span aria-hidden="true">✦</span><span><strong>Kabar produk dan promo</strong><br />Anda dapat memilih secara opsional untuk menerima informasi melalui email.</span></li>
-      </ul>
-      <div class="member-welcome-actions">
-        <a class="btn btn-primary" id="welcomeRegisterButton" href="akun.html?mode=register">Daftar sekarang</a>
-        <button class="btn btn-secondary" type="button" data-welcome-continue>Lanjut belanja</button>
+      <p class="section-label">PILIH CARA BERGABUNG</p>
+      <h2 id="memberWelcomeTitle">Bergabung dengan Urbann Attier</h2>
+      <p id="memberWelcomeDescription" class="member-welcome-intro">Anda ingin menikmati benefit belanja atau membagikan koleksi kami sebagai affiliate?</p>
+      <div class="welcome-choice-grid">
+        <article class="welcome-choice welcome-choice-member">
+          <p class="welcome-choice-label">UNTUK PELANGGAN</p>
+          <h3>Daftar sebagai member</h3>
+          <p>Nikmati diskon 5% untuk lima pesanan harga ecer pertama yang berhasil dibayar, serta kabar produk dan promo.</p>
+          <a class="btn btn-primary" id="welcomeRegisterButton" href="akun.html?mode=register">Buat akun member</a>
+        </article>
+        <article class="welcome-choice welcome-choice-affiliate">
+          <p class="welcome-choice-label">UNTUK PARTNER PROMOSI</p>
+          <h3>Jadi affiliate</h3>
+          <p>Dapatkan komisi awal 8% dari pesanan yang memenuhi syarat. Raih bonus Rp500.000 saat mencapai 500 pcs dalam sebulan.</p>
+          <a class="btn btn-secondary" id="welcomeAffiliateButton" href="affiliate.html?mode=register#program-info">Lihat benefit &amp; syarat</a>
+        </article>
       </div>
-      <p class="member-welcome-note">Belanja tanpa akun tetap tersedia.</p>
+      <button class="welcome-continue" type="button" data-welcome-continue>Lanjut belanja tanpa mendaftar</button>
+      <p class="member-welcome-note">Pendaftaran affiliate memerlukan persetujuan admin.</p>
     </div>
   </dialog>
 
@@ -120,6 +127,7 @@
         </li>
         <li><a href="#tentang-kami">Tentang Kami</a></li>
         <li><a href="#kontak">Kontak</a></li>
+        <li><a class="nav-affiliate-link" href="affiliate.html?mode=register">Daftar Affiliate</a></li>
         <li><a href="akun.html">Akun</a></li>
       </ul>
       <form class="nav-search" id="productSearch" role="search">
@@ -478,7 +486,7 @@
   <script src="supabase-config.js"></script>
   <script src="main.js"></script>
   <script src="cart-store.js"></script>
-  <script src="welcome.js"></script>
+  <script src="welcome.js?v=20261126-affiliate-invite"></script>
   <a class="floating-chat-link" href="https://wa.me/6282318500057?text=Halo%20Urbann%20Attier%2C%20saya%20ingin%20bertanya." target="_blank" rel="noopener noreferrer" aria-label="Chat Urbann Attier melalui WhatsApp"><svg class="floating-chat-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8.4 8.4 0 0 1-12.4 7.4L4 20l1.1-3.4A8.4 8.4 0 1 1 20 11.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 8.3c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.7 1.6c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.4-.1.6.6 1 1.5 1.8 2.5 2.3.2.1.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.5.7c.3.1.4.3.4.5 0 .5-.3 1.2-.8 1.5-.5.4-1.1.5-1.8.3-1.4-.4-2.7-1.2-3.8-2.2-1.1-1-2-2.3-2.4-3.6-.2-.7-.1-1.3.2-1.9.2-.3.5-.6.8-.8Z" fill="currentColor"/></svg><span class="floating-chat-icon" aria-hidden="true">✆</span><span>Chat WhatsApp</span></a>
 </body>
 

@@ -19,6 +19,9 @@ Folder ini berisi migrasi Supabase untuk website Urbann Attier. Project yang saa
 14. Jika penyimpanan konten **Sorotan & promo** menampilkan `permission denied for table store_public_settings`, jalankan `202611160002_store_public_settings_admin_write.sql`. Migrasi ini memulihkan izin baca publik dan izin update untuk pengguna terautentikasi; kebijakan RLS tetap membatasi update hanya untuk admin aktif.
 15. Jalankan `202611250001_product_categories.sql` untuk menyiapkan kategori bertingkat **Gamis → Gamis Anak/Gamis Dewasa** dan **One Set → One Set Anak**. Migrasi ini menautkan produk lama berlabel `Gamis` ke kategori induk Gamis, mempertahankan label lama, menyiapkan hak baca publik dan pengelolaan khusus admin, serta menambahkan tabel kategori ke Realtime jika publication tersedia. Setelah migrasi sukses, deploy file website terbaru agar filter kategori storefront dan pengelola kategori dashboard aktif. Produk baru wajib diberi kategori dari dashboard.
 16. Untuk program affiliate, jalankan `202611250002_affiliate_program.sql` setelah migrasi kategori dan akun pelanggan. Migrasi ini menambah aplikasi affiliate, atribusi referral 30 hari, komisi 8% (dapat diubah admin), masa tunggu 3 hari setelah pesanan diterima, bonus 500 pcs per bulan, saldo minimum Rp100.000, dan antrean pencairan BCA. Setelah itu deploy file website terbaru (`affiliate.html`, `affiliate.css`, `affiliate.js`, `supabase-config.js`, `main.js`, `checkout.js`, `admin.html`, `admin.css`, `admin.js`, `index.html`, `checkout.html`, `kebijakan-privasi.html`, `kebijakan-retur.html`, dan `sitemap.xml`) serta perbarui Edge Function `create-midtrans-payment` dari source yang sama. Pencairan tetap dilakukan manual oleh admin setiap Jumat setelah pukul 15.00 WIB. Pelanggan mengajukan retur dan mengirim video unboxing melalui WhatsApp; admin meninjau buktinya lalu mencatat retur dari dashboard.
+17. Jalankan `202611260001_admin_limit_two.sql` untuk membatasi akses dashboard menjadi maksimal dua admin aktif. Buat akun kedua melalui **Authentication → Users**, lalu masukkan `User UID`-nya ke `public.admin_users` sesuai petunjuk di bawah.
+18. Jalankan `202611260002_affiliate_terms_version.sql` untuk mencatat persetujuan baru sebagai versi `2026-11-v2` saat calon affiliate mengirim pengajuan. Tampilkan benefit dan syarat lengkap sebelum pembuatan akun, lalu deploy file website affiliate terbaru.
+19. Jalankan `202611260003_affiliate_closure_minimum.sql` agar penutupan akun tidak membuat saldo di bawah minimum otomatis dicairkan. Saldo tersebut tetap tercatat dan dapat dilihat sebagai ringkasan read-only setelah akun ditutup.
 
 ## Menyiapkan login pelanggan
 
@@ -27,18 +30,18 @@ Folder ini berisi migrasi Supabase untuk website Urbann Attier. Project yang saa
 3. Buka `akun.html` melalui Live Server untuk membuat akun, masuk, mengirim tautan lupa kata sandi, atau mengubah persetujuan email promosi. Biarkan Live Server berjalan saat tautan pemulihan dibuka. Jika Supabase mengarahkan token pemulihan ke halaman utama, `main.js` meneruskannya ke formulir kata sandi baru di `akun.html`. Akun pelanggan tidak mendapat akses admin; jangan menambahkan pelanggan ke tabel `admin_users`.
 4. Tanpa persetujuan email promosi, pelanggan tetap dapat mendaftar dan masuk, tetapi tidak dimasukkan ke daftar penerima pengumuman promosi. Persetujuan dapat diubah dari halaman akun.
 
-## Menyiapkan admin pertama
+## Menyiapkan akun admin (maksimal dua admin aktif)
 
-1. Di project Supabase yang sama, buka **Authentication → Users** dan buat pengguna admin dengan email yang akan dipakai untuk login dashboard.
+1. Di project Supabase yang sama, buka **Authentication → Users** dan buat pengguna dengan email yang akan dipakai untuk login dashboard.
 2. Salin `User UID` pengguna tersebut.
-3. Di **SQL Editor**, jalankan perintah berikut setelah mengganti UUID contoh dengan `User UID` milik admin:
+3. Di **SQL Editor**, jalankan perintah berikut setelah mengganti UUID contoh dengan `User UID` pengguna:
 
 ```sql
 insert into public.admin_users (user_id)
 values ('GANTI-DENGAN-USER-UID');
 ```
 
-Jangan menambahkan akun pengunjung ke tabel `admin_users`. Project URL dan anon/publishable key boleh digunakan oleh frontend setelah dashboard disiapkan; `service_role` key dan password database harus tetap rahasia.
+Migrasi `202611260001_admin_limit_two.sql` membatasi jumlah admin aktif menjadi maksimal dua akun. Untuk admin kedua, ulangi langkah yang sama dengan akun dan `User UID` miliknya. Jangan menonaktifkan admin lama sebelum admin kedua berhasil masuk dan dikonfirmasi. Jangan menambahkan akun pengunjung ke tabel `admin_users`. Project URL dan anon/publishable key boleh digunakan oleh frontend setelah dashboard disiapkan; `service_role` key dan password database harus tetap rahasia.
 
 ## Isi database saat ini
 

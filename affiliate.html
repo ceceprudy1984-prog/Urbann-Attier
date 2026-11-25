@@ -8,10 +8,10 @@
     <title>Affiliate | Urbann Attier</title>
     <meta name="description" content="Daftar dan kelola akun affiliate Urbann Attier." />
     <link rel="icon" type="image/x-icon" href="assets/Urban Attier.jpg" />
-    <link rel="stylesheet" href="affiliate.css" />
+    <link rel="stylesheet" href="affiliate.css?v=20261126-affiliate-terms" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="affiliate.js" defer></script>
+    <script src="affiliate.js?v=20261126-affiliate-terms" defer></script>
   </head>
   <body class="affiliate-body">
     <main class="affiliate-shell">
@@ -19,15 +19,50 @@
       <header class="affiliate-brand"><img src="assets/urban attier tf.png" alt="" /><span>Urbann Attier <small>PROGRAM AFFILIATE</small></span></header>
       <p class="affiliate-status" id="affiliateStatus" role="status" aria-live="polite"></p>
 
+      <section class="affiliate-card affiliate-program-card" id="program-info">
+        <p class="affiliate-eyebrow">PROGRAM KEMITRAAN</p>
+        <h1>Bagikan koleksi, dapatkan komisi</h1>
+        <p class="affiliate-lead">Promosikan koleksi Urbann Attier melalui link referral pribadi. Pendaftaran gratis dan setiap pengajuan ditinjau admin.</p>
+        <div class="affiliate-benefits" aria-label="Benefit program affiliate">
+          <article><span>Komisi awal</span><strong>8%</strong><small>Dari nilai produk setelah diskon; ongkir dan biaya pengemasan tidak dihitung.</small></article>
+          <article><span>Bonus bulanan</span><strong>Rp500.000</strong><small>Jika mencapai minimal 500 pcs pesanan affiliate yang memenuhi syarat dalam satu bulan.</small></article>
+          <article><span>Pencairan</span><strong>Setiap Jumat</strong><small>Manual ke rekening BCA mulai pukul 15.00 WIB. Minimum Rp100.000.</small></article>
+          <article><span>Peralatan promosi</span><strong>Link &amp; dashboard</strong><small>Pantau klik referral, pesanan, komisi menunggu, dan saldo.</small></article>
+        </div>
+        <div class="affiliate-steps" aria-label="Cara bergabung">
+          <h2>Cara bergabung</h2>
+          <ol><li>Buat akun dan verifikasi email.</li><li>Baca ketentuan lalu kirim pengajuan affiliate.</li><li>Tunggu persetujuan admin. Setelah aktif, bagikan link referral Anda.</li></ol>
+        </div>
+        <details class="affiliate-terms-details" id="affiliateTerms" open>
+          <summary>Syarat dan ketentuan affiliate</summary>
+          <ol>
+            <li><strong>Pendaftaran dan persetujuan.</strong> Pendaftaran tidak dipungut biaya. Data pendaftar harus benar dan akun affiliate aktif setelah disetujui admin.</li>
+            <li><strong>Komisi.</strong> Komisi awal 8% dihitung dari nilai produk setelah diskon, tidak termasuk ongkir dan biaya pengemasan. Jika tarif berubah, perubahan diberitahukan dan hanya berlaku untuk pesanan baru setelah pemberitahuan.</li>
+            <li><strong>Atribusi referral.</strong> Referral berlaku 30 hari pada perangkat yang sama. Klik link affiliate terbaru menggantikan atribusi sebelumnya.</li>
+            <li><strong>Pesanan yang memenuhi syarat.</strong> Pesanan harus lunas, diterima pembeli, dan melewati 3 hari tanpa retur atau pembatalan. Komisi baru tersedia setelah masa tersebut selesai.</li>
+            <li><strong>Retur pelanggan.</strong> Pengajuan retur mengikuti <a href="kebijakan-retur.html">Ketentuan retur toko</a>, termasuk batas waktu 3 hari setelah barang diterima dan kewajiban video unboxing.</li>
+            <li><strong>Bonus target.</strong> Bonus Rp500.000 diberikan untuk setiap bulan kalender ketika affiliate mencapai minimal 500 pcs pesanan yang memenuhi syarat. Pesanan batal atau retur tidak dihitung.</li>
+            <li><strong>Pencairan.</strong> Pencairan dilakukan manual setiap Jumat mulai pukul 15.00 WIB ke rekening BCA atas nama affiliate. Minimum pencairan Rp100.000. Saldo di bawah minimum dibawa ke pekan berikutnya dan belum dapat dicairkan, termasuk jika akun ditutup.</li>
+            <li><strong>Promosi yang diperbolehkan.</strong> Affiliate tidak boleh membuat klaim palsu, mengirim spam, memalsukan klik atau transaksi, melakukan referral atas pembelian sendiri, atau mengaku sebagai akun resmi Urbann Attier.</li>
+            <li><strong>Peninjauan akun.</strong> Admin dapat menolak, menangguhkan, atau meninjau akun jika ditemukan pelanggaran. Permintaan penutupan akun harus menyertakan alasan dan menunggu persetujuan admin.</li>
+            <li><strong>Pajak dan data.</strong> Affiliate bertanggung jawab mencatat dan memenuhi kewajiban pajak atas penghasilan komisi sesuai ketentuan yang berlaku. Data akun dan rekening digunakan untuk mengelola keanggotaan, komisi, dan pencairan sesuai <a href="kebijakan-privasi.html">Kebijakan Privasi</a>.</li>
+          </ol>
+        </details>
+      </section>
+
       <section class="affiliate-card" id="authPanel">
         <p class="affiliate-eyebrow">BERTUMBUH BERSAMA KAMI</p>
         <h1 id="authTitle">Masuk ke akun affiliate</h1>
         <p class="affiliate-lead">Bagikan koleksi Urbann Attier dan pantau hasil referral Anda.</p>
         <form id="authForm" class="affiliate-form">
-          <label>Email<input id="authEmail" type="email" autocomplete="email" required /></label>
-          <label>Kata sandi<input id="authPassword" type="password" minlength="8" autocomplete="current-password" required /></label>
           <label id="nameField" hidden>Nama lengkap<input id="authApplicantName" maxlength="160" autocomplete="name" /></label>
+          <label>Email<input id="authEmail" type="email" autocomplete="email" required /></label>
           <label id="phoneField" hidden>Nomor WhatsApp<input id="authApplicantPhone" maxlength="32" type="tel" autocomplete="tel" /></label>
+          <label>Kata sandi<input id="authPassword" type="password" minlength="8" autocomplete="current-password" required /></label>
+          <div id="registrationConsentWrap" class="registration-consent" hidden>
+            <label class="affiliate-check"><input id="termsConsent" type="checkbox" /> <span>Saya telah membaca dan menyetujui <a href="#affiliateTerms">Syarat dan Ketentuan Affiliate</a>.</span></label>
+            <label class="affiliate-check"><input id="privacyConsent" type="checkbox" /> <span>Saya telah membaca <a href="kebijakan-privasi.html" target="_blank" rel="noopener noreferrer">Kebijakan Privasi</a>.</span></label>
+          </div>
           <button class="affiliate-button" id="authSubmit" type="submit">Masuk</button>
         </form>
         <p class="affiliate-switch" id="authSwitch">Belum punya akun? <button type="button" data-mode="register">Daftar</button></p>
@@ -35,23 +70,13 @@
 
       <section class="affiliate-card" id="applicationPanel" hidden>
         <p class="affiliate-eyebrow">PENDAFTARAN AFFILIATE</p>
-        <h1>Ketentuan program</h1>
-        <div class="affiliate-terms">
-          <ul>
-            <li>Komisi awal 8% dari nilai produk setelah diskon, di luar ongkir dan biaya pengemasan. Besar persentase dapat berubah dan akan diberitahukan.</li>
-            <li>Referral berlaku 30 hari. Klik referral terbaru menggantikan referral sebelumnya pada perangkat yang sama.</li>
-            <li>Komisi menunggu sampai pembayaran lunas, pesanan diterima, lalu melewati 3 hari tanpa retur atau pembatalan.</li>
-            <li>Pencairan ditangani manual setiap Jumat mulai pukul 15.00 WIB melalui transfer BCA. Saldo minimum Rp100.000; saldo lebih kecil dibawa ke pekan berikutnya.</li>
-            <li>Bonus Rp500.000 diberikan satu kali untuk setiap bulan kalender saat sedikitnya 500 pcs pesanan affiliate yang memenuhi syarat tercatat.</li>
-            <li>Permintaan penutupan akun memerlukan alasan dan persetujuan admin. Saldo sah di bawah minimum tetap dibayarkan pada pencairan akhir.</li>
-            <li>Retur diajukan dalam 3 hari setelah barang diterima. Video unboxing wajib disertakan untuk pengajuan retur; admin meninjau bukti dan kondisi barang.</li>
-          </ul>
-        </div>
+        <h1>Kirim pengajuan keanggotaan</h1>
+        <p class="affiliate-lead">Periksa kembali syarat dan benefit di atas sebelum mengirim pengajuan. Admin akan meninjau pendaftaran Anda.</p>
         <div class="affiliate-form">
           <label>Nama lengkap<input id="applicantName" maxlength="160" autocomplete="name" required /></label>
           <label>Nomor WhatsApp<input id="applicantPhone" maxlength="32" type="tel" autocomplete="tel" required /></label>
         </div>
-        <label class="affiliate-check"><input id="acceptTerms" type="checkbox" /> Saya telah membaca dan menyetujui ketentuan affiliate.</label>
+        <label class="affiliate-check"><input id="acceptTerms" type="checkbox" /> Saya mengajukan keanggotaan dan menyetujui Syarat dan Ketentuan Affiliate yang berlaku.</label>
         <button class="affiliate-button" id="applyButton" type="button">Ajukan keanggotaan</button>
       </section>
 
@@ -76,7 +101,7 @@
           <div class="affiliate-form-section"><h2>Aktivitas komisi</h2><div class="affiliate-table-wrap"><table><thead><tr><th>Pesanan</th><th>Nilai produk</th><th>Komisi</th><th>Status</th></tr></thead><tbody id="commissionRows"></tbody></table></div><p class="affiliate-empty" id="commissionEmpty" hidden>Belum ada pesanan referral.</p></div>
           <div class="affiliate-form-section"><h2>Bonus target bulanan</h2><div class="affiliate-table-wrap"><table><thead><tr><th>Bulan</th><th>Unit valid</th><th>Bonus</th><th>Status</th></tr></thead><tbody id="bonusRows"></tbody></table></div><p class="affiliate-empty" id="bonusEmpty" hidden>Belum ada bonus bulanan.</p></div>
           <div class="affiliate-form-section"><h2>Riwayat pencairan</h2><div class="affiliate-table-wrap"><table><thead><tr><th>Tanggal</th><th>Jumlah</th><th>Status</th><th>Catatan</th></tr></thead><tbody id="payoutRows"></tbody></table></div><p class="affiliate-empty" id="payoutEmpty" hidden>Belum ada pencairan.</p></div>
-          <div class="affiliate-form-section affiliate-close-section"><h2>Penutupan akun</h2><p>Penutupan memerlukan persetujuan admin. Saldo sah tetap dicairkan meskipun di bawah batas minimum.</p><form class="affiliate-form" id="closureForm"><label>Alasan penutupan<textarea id="closureReason" minlength="10" maxlength="1000" required></textarea></label><button class="affiliate-button affiliate-button-danger" type="submit">Ajukan penutupan</button></form></div>
+          <div class="affiliate-form-section affiliate-close-section"><h2>Penutupan akun</h2><p>Penutupan memerlukan persetujuan admin. Saldo di bawah minimum tetap tercatat, tetapi belum dapat dicairkan sebelum mencapai batas minimum.</p><form class="affiliate-form" id="closureForm"><label>Alasan penutupan<textarea id="closureReason" minlength="10" maxlength="1000" required></textarea></label><button class="affiliate-button affiliate-button-danger" type="submit">Ajukan penutupan</button></form></div>
         </section>
       </section>
     </main>

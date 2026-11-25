@@ -438,6 +438,19 @@ button:focus-visible {
   transform: translateY(-1px);
 }
 
+.nav-links a.nav-affiliate-link {
+  padding: 9px 12px;
+  border: 1px solid rgb(227 195 133 / 55%);
+  border-radius: 999px;
+  color: var(--gold-light);
+}
+.nav-links a.nav-affiliate-link::after { display: none; }
+.nav-links a.nav-affiliate-link:hover,
+.nav-links a.nav-affiliate-link:focus-visible {
+  color: var(--black);
+  background: var(--gold-light);
+}
+
 .nav-search {
   display: flex;
   width: 42px;
@@ -2457,8 +2470,8 @@ button:focus-visible {
 }
 
 .member-welcome {
-  width: min(92vw, 560px);
-  max-width: 560px;
+  width: min(92vw, 680px);
+  max-width: 680px;
   max-height: min(92vh, 760px);
   padding: 0;
   overflow: auto;
@@ -2487,14 +2500,15 @@ button:focus-visible {
 .member-welcome h2 { margin: 0; color: #302b2c; font-family: Georgia, "Times New Roman", serif; font-size: clamp(27px, 6vw, 38px); line-height: 1.13; }
 .member-welcome-intro { max-width: 430px; margin: 14px auto 20px; color: #70686a; line-height: 1.65; }
 
-.member-benefits { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; text-align: left; }
-.member-benefits li { display: grid; grid-template-columns: 24px 1fr; gap: 10px; padding: 14px; border: 1px solid #e8ddd0; border-radius: 12px; background: #faf6ef; color: #625b5b; font-size: 14px; line-height: 1.5; }
-.member-benefits li > span:first-child { color: #b79a68; font-size: 18px; }
-.member-benefits strong { color: #302b2c; }
-
-.member-welcome-actions { display: grid; gap: 10px; margin-top: 22px; }
-.member-welcome-actions .btn { width: 100%; min-height: 48px; justify-content: center; cursor: pointer; font: inherit; text-decoration: none; }
-.member-welcome-actions .btn-secondary { border: 1px solid #d8c8b5; color: #5e5145; background: #fffdfa; }
+.welcome-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; text-align: left; }
+.welcome-choice { display: flex; min-height: 238px; flex-direction: column; padding: 19px; border: 1px solid #e8ddd0; border-radius: 14px; background: #faf6ef; }
+.welcome-choice-affiliate { border-color: rgb(183 140 77 / 52%); background: linear-gradient(145deg, #fbf7f0, #fffdfa); }
+.welcome-choice-label { margin: 0 0 8px; color: #9b753c; font-size: 9px; font-weight: 700; letter-spacing: .13em; }
+.welcome-choice h3 { margin: 0 0 8px; color: #302b2c; font: 600 20px Georgia, "Times New Roman", serif; }
+.welcome-choice > p:not(.welcome-choice-label) { margin: 0 0 16px; color: #70686a; font-size: 13px; line-height: 1.55; }
+.welcome-choice .btn { width: 100%; min-height: 46px; justify-content: center; margin-top: auto; cursor: pointer; font: inherit; text-decoration: none; text-align: center; }
+.welcome-choice .btn-secondary { border: 1px solid #d8c8b5; color: #5e5145; background: #fffdfa; }
+.welcome-continue { margin-top: 17px; padding: 7px 10px; border: 0; color: #675d56; background: transparent; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 13px; }
 .member-welcome-note { margin: 14px 0 0; color: #807779; font-size: 12px; }
 .member-welcome-close { position: absolute; top: 14px; right: 16px; width: 36px; height: 36px; border: 0; border-radius: 50%; color: #746b6b; background: #f5efe8; font-size: 25px; line-height: 1; cursor: pointer; }
 
@@ -2505,6 +2519,13 @@ button:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .member-welcome[open] { animation: none; }
+}
+
+@media (max-width: 560px) {
+  .member-welcome-card { padding: 34px 22px 25px; }
+  .welcome-choice-grid { grid-template-columns: 1fr; gap: 10px; }
+  .welcome-choice { min-height: 0; padding: 16px; }
+  .welcome-choice h3 { font-size: 19px; }
 }
 
 @media (max-width: 480px) {

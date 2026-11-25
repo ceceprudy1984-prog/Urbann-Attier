@@ -29,8 +29,11 @@ function setAuthMode(mode) {
   $affiliate("#authPassword").autocomplete = registering ? "new-password" : "current-password";
   $affiliate("#nameField").hidden = !registering;
   $affiliate("#phoneField").hidden = !registering;
+  $affiliate("#registrationConsentWrap").hidden = !registering;
   $affiliate("#authApplicantName").required = registering;
   $affiliate("#authApplicantPhone").required = registering;
+  $affiliate("#termsConsent").required = registering;
+  $affiliate("#privacyConsent").required = registering;
   $affiliate("#authSwitch").innerHTML = registering
     ? 'Sudah punya akun? <button type="button" data-mode="login">Masuk</button>'
     : 'Belum punya akun? <button type="button" data-mode="register">Daftar</button>';
@@ -50,10 +53,15 @@ function renderAffiliateDashboard(data) {
   if (!$affiliate("#applicantPhone").value) $affiliate("#applicantPhone").value = data.phone || "";
   const state = data.application_status;
   $affiliate("#applicationLabel").textContent = state === "approved"
-    ? "Akun affiliate Anda aktif. Berikut ringkasan performa dan saldo." : `Status akun: ${statusLabel(state)}.`;
+    ? "Akun affiliate Anda aktif. Berikut ringkasan performa dan saldo."
+    : state === "closed" ? "Akun affiliate ditutup. Ringkasan saldo tetap dapat dilihat."
+      : `Status akun: ${statusLabel(state)}.`;
   const content = $affiliate("#approvedContent");
-  content.hidden = state !== "approved" && state !== "closure_requested";
+  const isClosed = state === "closed";
+  content.hidden = !["approved", "closure_requested", "closed"].includes(state);
   if (content.hidden) return;
+  content.querySelector(".affiliate-link-box").hidden = isClosed;
+  $affiliate("#bankForm").closest(".affiliate-form-section").hidden = isClosed;
   const link = new URL("index.html", window.location.href);
   link.searchParams.set("ref", data.referral_code);
   $affiliate("#referralLink").textContent = link.href;
@@ -61,7 +69,9 @@ function renderAffiliateDashboard(data) {
   $affiliate("#pendingBalance").textContent = affiliateMoney(data.pending_commission);
   $affiliate("#availableBalance").textContent = affiliateMoney(data.available_balance);
   $affiliate("#paidTotal").textContent = affiliateMoney(data.paid_total);
-  $affiliate("#payoutNote").textContent = `Pencairan manual setiap Jumat pukul 15.00 WIB ke BCA. Minimum ${affiliateMoney(data.minimum_payout)}; saldo di bawah batas dibawa ke minggu berikutnya. Komisi ${data.commission_rate}% dilepas setelah pesanan dibayar, diterima, dan melewati ${data.return_window_days || 3} hari tanpa retur.`;
+  $affiliate("#payoutNote").textContent = isClosed
+    ? `Akun sudah ditutup. Saldo yang belum mencapai minimum ${affiliateMoney(data.minimum_payout)} tetap tercatat, tetapi tidak dicairkan.`
+    : `Pencairan manual setiap Jumat pukul 15.00 WIB ke BCA. Minimum ${affiliateMoney(data.minimum_payout)}; saldo di bawah batas dibawa ke minggu berikutnya. Komisi ${data.commission_rate}% dilepas setelah pesanan dibayar, diterima, dan melewati ${data.return_window_days || 3} hari tanpa retur.`;
   $affiliate("#bankAccountName").value = data.bank_account_name || "";
   $affiliate("#bankAccountNumber").value = data.bank_account_number || "";
   const commissions = data.recent_commissions || [];
@@ -175,8 +185,10 @@ $affiliate("#closureForm").addEventListener("submit", async (event) => {
 });
 $affiliate("#affiliateLogout").addEventListener("click", async () => { await affiliateClient.auth.signOut(); affiliateSession = null; $affiliate("#affiliateDashboard").hidden = true; $affiliate("#authPanel").hidden = false; affiliateStatus("Anda sudah keluar."); });
 
+const requestedMode = new URLSearchParams(location.search).get("mode");
+setAuthMode(requestedMode === "register" ? "register" : "login");
+
 if (affiliateClient) {
   affiliateClient.auth.getSession().then(({ data }) => { if (data.session) enterAffiliate(data.session); });
   affiliateClient.auth.onAuthStateChange((event, session) => { if (event === "SIGNED_IN" && session) enterAffiliate(session); });
-  setAuthMode("login");
 } else affiliateStatus("Koneksi akun belum siap. Muat ulang atau hubungi admin.", true);

@@ -2,9 +2,9 @@
   const welcomeDialog = document.getElementById("memberWelcome");
   if (!welcomeDialog || typeof welcomeDialog.showModal !== "function") return;
 
-  // Jeda sebelum panel benefit muncul setelah animasi pembuka selesai.
+  // Jeda sebelum pilihan bergabung muncul setelah animasi pembuka selesai.
   const WELCOME_DIALOG_DELAY_MS = 260;
-  const dismissedKey = "urbann-attier-member-welcome-v1";
+  const dismissedKey = "urbann-attier-member-welcome-v2";
   // Reuse the homepage client so auth helpers share a single session instance.
   const authClient = window.urbannSupabaseClient || null;
 
@@ -12,7 +12,7 @@
   try {
     alreadyDismissed = window.localStorage.getItem(dismissedKey) === "seen";
   } catch {
-    // The notice can still work when browser storage is unavailable.
+    // The welcome panel can still work when browser storage is unavailable.
   }
 
   const rememberChoice = () => {
@@ -31,6 +31,7 @@
   });
 
   document.getElementById("welcomeRegisterButton")?.addEventListener("click", rememberChoice);
+  document.getElementById("welcomeAffiliateButton")?.addEventListener("click", rememberChoice);
   welcomeDialog.addEventListener("cancel", rememberChoice);
 
   const showWelcomeAfterSplash = async () => {
@@ -48,7 +49,7 @@
     }
 
     // A short pause after the curtain gives the homepage a calm transition
-    // before the member benefits panel appears.
+    // before the welcome choices appear.
     window.setTimeout(() => {
       if (!alreadyDismissed && !welcomeDialog.open) welcomeDialog.showModal();
     }, WELCOME_DIALOG_DELAY_MS);
