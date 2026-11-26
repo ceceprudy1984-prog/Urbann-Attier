@@ -865,6 +865,95 @@ async function loadTrafficReport() {
   }
 }
 
+function normalizeUtmValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildUtmLink(event) {
+  event.preventDefault();
+  const landingInput = $("#utmLandingUrl").value.trim();
+  const source = normalizeUtmValue($("#utmSource").value);
+  const medium = normalizeUtmValue($("#utmMedium").value);
+  const campaign = normalizeUtmValue($("#utmCampaign").value);
+  const content = normalizeUtmValue($("#utmContent").value);
+  try {
+    const url = new URL(landingInput);
+    if (url.protocol !== "https:" || !["urbannattier.com", "www.urbannattier.com"].includes(url.hostname.toLowerCase())) {
+      throw new Error("Halaman tujuan harus berupa tautan HTTPS di urbannattier.com.");
+    }
+    if (!source || !medium || !campaign) throw new Error("Isi sumber, jenis promosi, dan nama kampanye terlebih dahulu.");
+    url.searchParams.set("utm_source", source);
+    url.searchParams.set("utm_medium", medium);
+    url.searchParams.set("utm_campaign", campaign);
+    if (content) url.searchParams.set("utm_content", content);
+    else url.searchParams.delete("utm_content");
+
+    $("#utmGeneratedUrl").value = url.toString();
+    const qrUrl = new URL("https://api.qrserver.com/v1/create-qr-code/");
+    qrUrl.searchParams.set("size", "600x600");
+    qrUrl.searchParams.set("format", "png");
+    qrUrl.searchParams.set("ecc", "M");
+    qrUrl.searchParams.set("qzone", "4");
+    qrUrl.searchParams.set("data", url.toString());
+    const qrImage = $("#utmQrImage");
+    qrImage.hidden = false;
+    qrImage.alt = `QR code untuk kampanye ${campaign} dari ${source}`;
+    qrImage.dataset.qrUrl = qrUrl.toString();
+    qrImage.onerror = () => {
+      qrImage.hidden = true;
+      setStatus("#utmBuilderStatus", "Tautan sudah dibuat, tetapi QR belum dapat dimuat. Periksa koneksi lalu buat ulang.", true);
+    };
+    qrImage.onload = () => setStatus("#utmBuilderStatus", "Tautan dan QR berhasil dibuat. Salin tautan atau unduh QR untuk dibagikan.");
+    qrImage.src = qrUrl.toString();
+    $("#utmResult").hidden = false;
+    setStatus("#utmBuilderStatus", "Tautan berhasil dibuat. Salin lalu bagikan di kanal promosi yang sesuai.");
+  } catch (error) {
+    $("#utmResult").hidden = true;
+    setStatus("#utmBuilderStatus", error.message || "Tautan tujuan tidak valid.", true);
+  }
+}
+
+async function copyUtmLink() {
+  const generatedUrl = $("#utmGeneratedUrl");
+  try {
+    await navigator.clipboard.writeText(generatedUrl.value);
+    setStatus("#utmBuilderStatus", "Tautan berhasil disalin. Sekarang tempelkan ke postingan, bio, atau iklan.");
+  } catch {
+    generatedUrl.focus();
+    generatedUrl.select();
+    setStatus("#utmBuilderStatus", "Tautan siap disalin. Tekan Ctrl+C, lalu tempelkan ke kanal promosi.");
+  }
+}
+
+async function downloadUtmQr() {
+  const qrImage = $("#utmQrImage");
+  const qrUrl = qrImage.dataset.qrUrl;
+  if (!qrUrl) return;
+  try {
+    const response = await fetch(qrUrl, { mode: "cors" });
+    if (!response.ok) throw new Error("QR belum dapat diunduh.");
+    const imageBlob = await response.blob();
+    const objectUrl = URL.createObjectURL(imageBlob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `urbann-attier-${normalizeUtmValue($("#utmCampaign").value) || "qr"}.png`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+    setStatus("#utmBuilderStatus", "QR berhasil diunduh sebagai PNG.");
+  } catch {
+    window.open(qrUrl, "_blank", "noopener");
+    setStatus("#utmBuilderStatus", "QR dibuka di tab baru. Jika unduhan tidak dimulai, klik kanan gambar lalu pilih Simpan gambar sebagai.");
+  }
+}
+
 const ORDER_STATUS_LABELS = {
   needs_confirmation: "Perlu konfirmasi", awaiting_payment: "Menunggu pembayaran", paid: "Pembayaran lunas",
   processing: "Diproses", shipped: "Dikirim", completed: "Selesai", cancelled: "Dibatalkan",
@@ -1930,6 +2019,9 @@ $("#prepareAffiliatePayoutsButton").addEventListener("click", async () => {
   } catch (error) { setStatus("#affiliateAdminStatus", error.message || "Daftar pencairan belum dapat disiapkan.", true); }
 });
 $("#trafficDateRange").addEventListener("change", loadTrafficReport);
+$("#utmBuilderForm").addEventListener("submit", buildUtmLink);
+$("#copyUtmButton").addEventListener("click", copyUtmLink);
+$("#downloadUtmQrButton").addEventListener("click", downloadUtmQr);
 $("#refreshOrdersButton").addEventListener("click", async () => {
   try {
     await Promise.all([loadOrders(), loadOverview()]);

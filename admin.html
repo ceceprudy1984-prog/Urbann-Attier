@@ -111,6 +111,57 @@
               <article class="stat-card"><span>Transaksi</span><strong id="trafficPurchases">—</strong><small>Pesanan dengan event purchase</small></article>
               <article class="stat-card"><span>Omzet tercatat</span><strong id="trafficRevenue">—</strong><small>Nilai purchase yang diterima Analytics</small></article>
             </section>
+            <section class="panel product-panel utm-builder-panel" aria-labelledby="utmBuilderTitle">
+              <div class="panel-heading product-panel-heading">
+                <div><p class="eyebrow">TAUTAN PROMOSI</p><h2 id="utmBuilderTitle">Buat tautan UTM</h2></div>
+              </div>
+              <p class="utm-builder-intro">Buat tautan khusus untuk setiap kanal promosi. Saat orang mengekliknya, Analytics bisa mencatat asal kunjungannya.</p>
+              <form id="utmBuilderForm" class="utm-builder-form">
+                <label class="utm-field utm-field-wide" for="utmLandingUrl">Halaman tujuan
+                  <input id="utmLandingUrl" type="url" value="https://urbannattier.com/" placeholder="https://urbannattier.com/ atau tautan halaman produk" required>
+                  <small>Masukkan halaman utama atau halaman produk yang ingin dibuka.</small>
+                </label>
+                <label class="utm-field" for="utmSource">Sumber
+                  <input id="utmSource" type="text" list="utmSourceOptions" value="facebook" placeholder="facebook, instagram, tiktok" required>
+                  <datalist id="utmSourceOptions"><option value="facebook"><option value="instagram"><option value="tiktok"><option value="google"><option value="whatsapp"></datalist>
+                </label>
+                <label class="utm-field" for="utmMedium">Jenis promosi
+                  <select id="utmMedium" required>
+                    <option value="organic_social" selected>Sosial organik</option>
+                    <option value="paid_social">Iklan sosial berbayar</option>
+                    <option value="email">Email</option>
+                    <option value="referral">Referral / rekomendasi</option>
+                    <option value="other">Lainnya</option>
+                  </select>
+                </label>
+                <label class="utm-field" for="utmCampaign">Nama kampanye
+                  <input id="utmCampaign" type="text" placeholder="contoh: promo-awal" required>
+                  <small>Gunakan nama yang sama untuk promosi yang ingin dibandingkan.</small>
+                </label>
+                <label class="utm-field" for="utmContent">Penanda konten <span>(opsional)</span>
+                  <input id="utmContent" type="text" placeholder="contoh: story-1 atau video-hijab">
+                  <small>Berguna untuk membedakan beberapa postingan atau materi iklan.</small>
+                </label>
+                <div class="utm-form-actions">
+                  <button class="button button-primary" type="submit">Buat tautan</button>
+                </div>
+              </form>
+              <div id="utmResult" class="utm-result" hidden>
+                <label for="utmGeneratedUrl">Tautan siap dibagikan</label>
+                <div class="utm-result-row">
+                  <input id="utmGeneratedUrl" type="url" readonly>
+                  <button class="button button-quiet" id="copyUtmButton" type="button">Salin tautan</button>
+                </div>
+                <div class="utm-qr-result">
+                  <img id="utmQrImage" alt="QR code untuk tautan promosi yang dibuat" width="240" height="240" hidden>
+                  <div class="utm-qr-actions">
+                    <button class="button button-quiet" id="downloadUtmQrButton" type="button">Unduh QR (PNG)</button>
+                    <small>QR dibuat melalui layanan QR eksternal; tautan promosi dikirim ke layanan tersebut untuk dibuatkan gambarnya.</small>
+                  </div>
+                </div>
+              </div>
+              <p class="products-status utm-status" id="utmBuilderStatus" role="status" aria-live="polite"></p>
+            </section>
             <section class="panel product-panel" aria-labelledby="trafficTableTitle">
               <div class="panel-heading product-panel-heading">
                 <div><p class="eyebrow">ASAL KUNJUNGAN</p><h2 id="trafficTableTitle">Trafik berdasarkan kanal</h2></div>
