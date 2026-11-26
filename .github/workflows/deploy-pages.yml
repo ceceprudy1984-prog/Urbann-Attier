@@ -1,0 +1,61 @@
+name: Build and deploy Urbann Attier
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the website
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate product pages and sitemap
+        run: node scripts/generate-seo-pages.mjs
+
+      - name: Check whether scheduled run found catalog changes
+        id: changes
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]] && [[ -z "$(git status --porcelain -- sitemap.xml produk)" ]]; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure GitHub Pages
+        if: steps.changes.outputs.deploy == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload website artifact
+        if: steps.changes.outputs.deploy == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy website
+        if: steps.changes.outputs.deploy == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4

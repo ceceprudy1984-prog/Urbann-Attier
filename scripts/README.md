@@ -1,6 +1,8 @@
 # Halaman SEO produk
 
-Website ini menggunakan hosting statis. Jalankan pembuat halaman SEO setelah ada perubahan katalog dan sebelum menerbitkan website:
+Website ini menggunakan hosting statis. Workflow GitHub Actions `.github/workflows/deploy-pages.yml` menjalankan pembuat halaman SEO setiap jam, setiap ada push ke `main`, atau saat dijalankan manual. Setelah workflow diaktifkan, produk aktif baru dari katalog Supabase akan dibuatkan halaman SEO dan dimasukkan ke sitemap pada pemeriksaan berikutnya; website lalu di-deploy otomatis. Jadwal dapat tertunda jika antrean GitHub Actions sedang padat.
+
+Untuk pembaruan langsung atau jika workflow belum aktif, jalankan pembuat halaman secara manual:
 
 ```powershell
 node scripts/generate-seo-pages.mjs
